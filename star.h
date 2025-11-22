@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 typedef void (*test_func)();
 
@@ -24,28 +25,81 @@ static int test_count = 0;
 #define _STAR_SUMMARY(format, ...) printf("\nTechnical and Reliable Summary: " format, ##__VA_ARGS__)
 #endif /* STAR_NO_COLOR */
 
-#define TEST(name) \
-    void name(); \
-    __attribute__((constructor)) \
-    void register_##name() { \
+// Test "Constructor"
+#define TEST(name)                                      \
+    void name();                                        \
+    __attribute__((constructor))                        \
+    void register_##name() {                            \
         tests[test_count++] = (test_case){#name, name}; \
-    } \
+    }                                                   \
     void name()
 
-#define ASS_TRUE(expr) \
-    if (!(expr)) { \
-        _STAR_FAIL("%s:%d: ASS_TRUE(%s) failed\n", __FILE__, __LINE__, #expr); \
-        return; \
+
+/* ASSERTS */
+
+// Equality & Inequality
+#define ASS_EQ(a, b)                                                      \
+    if ((a) != (b)) {                                                     \
+        _STAR_FAIL("%s:%d: ASS_EQ(%s, %s) failed: %lf != %lf\n",          \
+            __FILE__, __LINE__, #a, #b, (a), (b));                        \
+        return;                                                           \
     }
 
-#define ASS_EQ(a, b) \
-    if ((a) != (b)) { \
-        _STAR_FAIL("%s:%d: ASS_EQ(%s, %s) failed: %d != %d\n", __FILE__, __LINE__, #a, #b, (a), (b)); \
-        return; \
+
+#define ASS_NEQ(a, b)                                                     \
+    if ((a) == (b)) {                                                     \
+        _STAR_FAIL("%s:%d: ASS_NEQ(%s, %s) failed: %lf == %lf\n",         \
+            __FILE__, __LINE__, #a, #b, (a), (b));                        \
+        return;                                                           \
     }
 
+// Look at this song and dance I have to do... (easily preventable if I wasn't stubborn)
+#define ASS_KINDAEQ(a, b, dptr)                                                        \
+    do {                                                                               \
+        double n = 6.9;                                                                \
+        if ((dptr) != NULL) {                                                          \
+            const double *tmp__ = (const double *)(dptr);                              \
+            n = *tmp__;                                                                \
+        }                                                                              \
+        if (!(fabs((a) - (b)) <= n)) {                                                 \
+            _STAR_FAIL("%s:%d: ASS_KINDAEQ(%s, %s) failed: %lf !≈ %lf (degree %lf)\n", \
+                      __FILE__, __LINE__, #a, #b, (a), (b), n);                        \
+            return;                                                                    \
+        }                                                                              \
+    } while (0)
+
+
+#define ASS_KINDANEQ(a, b, dptr)                                                      \
+    do {                                                                              \
+        double n = 6.9;                                                               \
+        if ((dptr) != NULL) {                                                         \
+            const double *tmp__ = (const double *)(dptr);                             \
+            n = *tmp__;                                                               \
+        }                                                                             \
+        if ((fabs((a) - (b)) <= n)) {                                                 \
+            _STAR_FAIL("%s:%d: ASS_KINDAEQ(%s, %s) failed: %lf ≈ %lf (degree %lf)\n", \
+                      __FILE__, __LINE__, #a, #b, (a), (b), n);                       \
+            return;                                                                   \
+        }                                                                             \
+    } while (0)
+
+// Boolean / Truthiness
+#define ASS_TRUE(expr)                                                    \
+    if (!(expr)) {                                                        \
+        _STAR_FAIL("%s:%d: ASS_TRUE(%s) failed\n",                        \
+            __FILE__, __LINE__, #expr);                                   \
+        return;                                                           \
+    }
+
+#define ASS_TRUE(expr)                                                    \
+    if ((expr)) {                                                         \
+        _STAR_FAIL("%s:%d: ASS_FALSE(%s) failed\n",                       \
+            __FILE__, __LINE__, #expr);                                   \
+        return;                                                           \
+    }
+
+/* Run Functionality */
 #if defined(STAR_NO_ENTRY)
-// Test runner
 static inline void star_run(int o) {
     if (o) printf("Running %d tests...\n", test_count);
 
@@ -78,7 +132,8 @@ int main(int argc, char** argv) {
 #endif /* STAR_TEST_H */
 
 /*
-    Revision history:                                  
+    Revision history:        
+        0.3.0  (2025-11-22)  Added more equality + bool asserts.                      
         0.2.0  (2025-11-22)  Created test running and two asserts.
                              `main()` hijacking toggleable and
                              ASCII coloring also added.
