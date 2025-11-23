@@ -16,6 +16,12 @@ Currently, 256 tests can be written.
 - `ASS_IS(expr)` / `ASS_ISNT(expr)` (Objects - structs, arrays, etc.)
 - `ASS_ISNULL(expr)` / `ASS_ISNTNULL` (Null checker)
 
+#### Comparisons
+- `ASS_GREATER(a, b)`, `ASS_GREATEREQ(a, b)` / `ASS_LESSER(a, b)`, `ASS_LESSEREQ(a, b)` (>/=, </=)
+
+#### Other
+- `DIE()` (forced fail)
+
 There is also support for custom messages by adding an `M` at the end of the function name: `ASS_EQM, ASS_KINDANEQM, ...`. An example of this is below.
 
 ### Noncomprehensive Example
@@ -64,7 +70,7 @@ TEST(test_strings) {
     <img src="scs/example2.png" width="600">
 </p>
 
-Only 8 asserts are recognised because of fatal assertions that abort the rest of the function and subsequently don't reach the next assert (in `test_strings` and `test_addition`).
+Only 8 asserts are recognised because of fatal assertions that abort the rest of the function and subsequently don't reach the next assert (in `test_strings` and `test_addition`). There are more functions, but those are shown seperately below (todo).
 
 ### Macros
 All the assertions are function-like macros, but there are a few others that, if you choose, should be defined before `#include`-ing the header:
@@ -81,7 +87,9 @@ All the assertions are function-like macros, but there are a few others that, if
 - `STAR_VERBOSE` (or `STAR_VERBOSE_ASSERTS`):
     Passed asserts aren't outputted by default if any of the other asserts in the testcase fail, this is to reduce the chanced of a cluttered output. Enable this to show passed asserts.
 
-### Dev Notes
+### More Examples (todo)
+
+### Dev Goals
 - [x] More informative outputs
 - [x] Object truthiness (struct, array, etc.)
 - [x] Epsilon-based floating-point comparison
@@ -89,3 +97,9 @@ All the assertions are function-like macros, but there are a few others that, if
 - [x] Custom fail messages
 - [ ] Collections / Sequences
 - [ ] Parameterized testing
+- [ ] Assertion Introspection
+- [ ] Timeout Handling / Infinite-Loop Detection
+- [ ] Rich Reporting Formats
+- [ ] Randomised (Fuzz-Style) Testing
+- [ ] Snapshot / Golden File Testing
+- [ ] Memory-Leak Detection Integration
