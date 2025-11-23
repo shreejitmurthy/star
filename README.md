@@ -8,7 +8,7 @@ STAR (Super Technical And Reliable) testing suite written in C.
 ### Tests and Asserts (developing more)
 Currently, 256 tests can be written.
 #### Equality and Inequality
-- `ASS_EQ(a, b)` / `ASS_NEQ(a, b)`
+- `ASS_EQ(a, b)` / `ASS_NEQ(a, b)` (compare `double`)
 - `ASS_KINDAEQ(a, b, d)` / `ASS_KINDANEQ(a, b, d)` (Not/AlmostEqual functionality)
 
 #### Boolean / Truthiness
@@ -55,9 +55,26 @@ TEST(test_nulls) {
 **Colored Output:**
 ![Epic Output](scs/example.png)
 
+### Macros
+All the assertions are function-like macros, but there are a few others that, if you choose, should be defined before `#include`-ing the header:
+- `STAR_NO_ENTRY`:  
+    By default, STAR provides its own `int main(...)` entrypoint and automatically runs all tests (inspired by [sokol](https://github.com/floooh/sokol)).  
+    Defining `STAR_NO_ENTRY` disables this behavior, requiring you to manually start test execution by calling `star_run(bool extra_output)`.  
+    This option should be enabled for most applications, except when testing STAR itself or when creating minimal standalone unit-test examples.
+- `STAR_NO_COLOR`:
+    By default, STAR uses ASCII escape codes for coloring. Defining `STAR_NO_COLOR` disables this.
+- `STAR_NON_FATAL`:
+    `ASS_` functions are by default fatal and will abort the function they are written in. 
+    Defining `STAR_NON_FATAL` disables this, and asserts are then treated similar to `EXPECT_` macros in other libraries.
+    As [GoogleTest says]((https://google.github.io/googletest/primer.html#assertions)): these are usually preferred, so enable this whenever possible, as fatal asserts are only truly useful when continuing after failing is illogical.
+- `STAR_VERBOSE` (or `STAR_VERBOSE_ASSERTS`):
+    Passed asserts aren't outputted by default if any of the other asserts in the testcase fail, this is to reduce the chanced of a cluttered output. Enable this to show passed asserts.
+
 ### Dev Notes
 - [x] More informative outputs
 - [x] Object truthiness (struct, array, etc.)
+- [ ] String comparing.
+- [ ] Custom fail messages
 - [ ] Collections / Sequences
 - [ ] Consider epsilon-based floating-point comparison
 - [ ] Parameterized testing
