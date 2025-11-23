@@ -30,6 +30,10 @@ TEST(test_boolean) {
     ASS_TRUE(cond);
     ASS_FALSE(cond);
 }
+
+// Automatic test case running by "hijacking" the `main()` function.
+// Use #define STAR_NO_ENTRY *before* including `star.h` to disable this.
+// Then use star_run(bool enable_output) to run all tests.
 ```
 **Colored Output:**
 ![Totally Working](scs/example1.png)
