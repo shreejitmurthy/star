@@ -6,6 +6,7 @@
             #define STAR_NO_ENTRY
             #include "star.h"
         Define `STAR_NO_COLOR` to disable ASCII coloring:
+        Define `STAR_NON_FATAL` so failed assertions mark a test as failed, but don't abort the test entirely.
         
         See the README.md for all features.
 
@@ -40,6 +41,12 @@ static _star_test_case _star_tests[256];
 static size_t _star_asserts_total  = 0;
 static size_t _star_asserts_failed = 0;
 
+#ifdef STAR_NON_FATAL
+static const int _star_fatal = 0;
+#else
+static const int _star_fatal = 1;
+#endif
+
 
 #if !defined(STAR_NO_COLOR)
 #define _STAR_FAIL(format, ...)                          \
@@ -50,7 +57,7 @@ static size_t _star_asserts_failed = 0;
     } while (0)
 
 #define _STAR_PASS(format, ...)    printf("\033[32m[PASS]\033[0m " format, ##__VA_ARGS__)
-#define _STAR_SUMMARY(format, ...) printf("\033[1m\nTechnical and Reliable Summary:\033[0m " format, ##__VA_ARGS__)
+#define _STAR_SUMMARY(format, ...) printf("\n\033[1mTechnical and Reliable Summary:\033[0m " format, ##__VA_ARGS__)
 #else
 #define _STAR_FAIL(format, ...)                          \
     do {                                                 \
@@ -83,7 +90,7 @@ static size_t _star_asserts_failed = 0;
                 #a, #b, (double)(a), (double)(b));                        \
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
-            return;                                                       \
+            if (_star_fatal) return;                                      \
         }                                                                 \
     } while (0)
 
@@ -95,7 +102,7 @@ static size_t _star_asserts_failed = 0;
                 #a, #b, (double)(a), (double)(b));                        \
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
-            return;                                                       \
+            if (_star_fatal) return;                                      \
         }                                                                 \
     } while (0)
 
@@ -114,7 +121,7 @@ static size_t _star_asserts_failed = 0;
                 #a, #b, (double)(a), (double)(b), n);                     \
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
-            return;                                                       \
+            if (_star_fatal) return;                                      \
         }                                                                 \
     } while (0)
 
@@ -131,7 +138,7 @@ static size_t _star_asserts_failed = 0;
                 #a, #b, (double)(a), (double)(b), n);                     \
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
-            return;                                                       \
+            if (_star_fatal) return;                                      \
         }                                                                 \
     } while (0)
 
@@ -142,7 +149,7 @@ static size_t _star_asserts_failed = 0;
             _STAR_FAIL("ASS_TRUE(%s) failed\n", #expr);                   \
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
-            return;                                                       \
+            if (_star_fatal) return;                                      \
         }                                                                 \
     } while (0)
 
@@ -153,7 +160,7 @@ static size_t _star_asserts_failed = 0;
             _STAR_FAIL("ASS_FALSE(%s) failed\n", #expr);                  \
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
-            return;                                                       \
+            if (_star_fatal) return;                                      \
         }                                                                 \
     } while (0)
 
@@ -164,7 +171,7 @@ static size_t _star_asserts_failed = 0;
             _STAR_FAIL("ASS_IS(%s, %s) failed\n", #a, #b);                \
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
-            return;                                                       \
+            if (_star_fatal) return;                                      \
         }                                                                 \
     } while (0)
 
@@ -175,7 +182,7 @@ static size_t _star_asserts_failed = 0;
             _STAR_FAIL("ASS_ISNT(%s, %s) failed\n", #a, #b);              \
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
-            return;                                                       \
+            if (_star_fatal) return;                                      \
         }                                                                 \
     } while (0)
 
@@ -188,7 +195,7 @@ static size_t _star_asserts_failed = 0;
             _STAR_FAIL("ASS_ISNULL(%s) failed\n", #expr);                 \
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
-            return;                                                       \
+            if (_star_fatal) return;                                      \
         }                                                                 \
     } while (0)
 
@@ -199,7 +206,7 @@ static size_t _star_asserts_failed = 0;
             _STAR_FAIL("ASS_ISNTNULL(%s) failed\n", #expr);               \
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
-            return;                                                       \
+            if (_star_fatal) return;                                      \
         }                                                                 \
     } while (0)
 
@@ -240,7 +247,7 @@ static inline int star_run(int o) {
 }
 #else
 int main(int argc, char** argv) {
-    printf("Running %zu tests...\n", _star_test_count);
+    printf("\033[1mRunning %zu tests...\033[0m\n", _star_test_count);
 
     int passed_tests = 0;
     int failed_tests = 0;
@@ -271,7 +278,7 @@ int main(int argc, char** argv) {
     _STAR_SUMMARY("%d/%zu tests passed, %d failed " "(%zu/%zu assertions passed)\n", 
         passed_tests, _star_test_count, failed_tests, total_passed_asserts, _star_asserts_total);
 
-    return 0;
+    return failed_tests ? 1 : 0;
 }
 #endif /* STAR_NO_ENTRY */
 
