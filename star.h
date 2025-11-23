@@ -60,21 +60,35 @@ static const int _star_verbose = 0;
     do {                                                 \
         fprintf(stderr, "\033[31m[FAIL]\033[0m %s:%d: ", \
                 __FILE__, __LINE__);                     \
-        fprintf(stderr, format, ##__VA_ARGS__);          \
+        fprintf(stderr, format "\n", ##__VA_ARGS__);     \
     } while (0)
 
-#define _STAR_PASS(format, ...)    printf("\033[32m[PASS]\033[0m " format, ##__VA_ARGS__)
-#define _STAR_SUMMARY(format, ...) printf("\n\033[1mTechnical and Reliable Summary:\033[0m " format, ##__VA_ARGS__)
+#define _STAR_TEST_FAIL(format, ...)                          \
+    do {                                                      \
+        fprintf(stderr, "\033[31m[TEST_FAILED]\033[0m ");     \
+        fprintf(stderr, format "\n", ##__VA_ARGS__);          \
+    } while (0)
+
+#define _STAR_PASS(format, ...)    printf("\033[32m[PASS]\033[0m " format "\n", ##__VA_ARGS__)
+#define _STAR_TEST_PASS(format, ...)    printf("\033[32m[TEST PASSED]\033[0m " format "\n", ##__VA_ARGS__)
+#define _STAR_SUMMARY(format, ...) printf("\n\033[1mTechnical and Reliable Summary:\033[0m " format "\n", ##__VA_ARGS__)
 #else
 #define _STAR_FAIL(format, ...)                          \
     do {                                                 \
         fprintf(stderr, "[FAIL] %s:%d: ",                \
                 __FILE__, __LINE__);                     \
-        fprintf(stderr, format, ##__VA_ARGS__);          \
+        fprintf(stderr, format "\n", ##__VA_ARGS__);     \
     } while (0)
 
-#define _STAR_PASS(format, ...)    printf("[PASS] " format, ##__VA_ARGS__)
-#define _STAR_SUMMARY(format, ...) printf("\nTechnical and Reliable Summary: " format, ##__VA_ARGS__)
+#define _STAR_TEST_FAIL(format, ...)                     \
+    do {                                                 \
+        fprintf(stderr, "[FAIL] ");                      \
+        fprintf(stderr, format "\n", ##__VA_ARGS__);     \
+    } while (0)
+
+#define _STAR_PASS(format, ...)    printf("[PASS] " format "\n", ##__VA_ARGS__)
+#define _STAR_TEST_PASS(format, ...)    printf("[TEST PASSED] " format "\n", ##__VA_ARGS__)
+#define _STAR_SUMMARY(format, ...) printf("\nTechnical and Reliable Summary: " format "\n", ##__VA_ARGS__)
 #endif /* STAR_NO_COLOR */
 
 // Test "Constructor"
@@ -93,13 +107,13 @@ static const int _star_verbose = 0;
     do {                                                                  \
         _star_asserts_total++;                                            \
         if ((a) != (b)) {                                                 \
-            _STAR_FAIL("ASS_EQ(%s, %s) failed: %lf != %lf\n",             \
+            _STAR_FAIL("ASS_EQ(%s, %s) failed: %lf != %lf",               \
                        #a, #b, (double)(a), (double)(b));                 \
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_EQ(%s, %s) passed: %lf == %lf\n",             \
+            _STAR_PASS("ASS_EQ(%s, %s) passed: %lf == %lf",               \
                        #a, #b, (double)(a), (double)(b));                 \
         }                                                                 \
     } while (0)
@@ -108,13 +122,13 @@ static const int _star_verbose = 0;
     do {                                                                  \
         _star_asserts_total++;                                            \
         if ((a) == (b)) {                                                 \
-            _STAR_FAIL("ASS_NEQ(%s, %s) failed: %lf == %lf\n",            \
+            _STAR_FAIL("ASS_NEQ(%s, %s) failed: %lf == %lf",              \
                        #a, #b, (double)(a), (double)(b));                 \
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_NEQ(%s, %s) passed: %lf != %lf\n",            \
+            _STAR_PASS("ASS_NEQ(%s, %s) passed: %lf != %lf",              \
                        #a, #b, (double)(a), (double)(b));                 \
         }                                                                 \
     } while (0)
@@ -130,13 +144,13 @@ static const int _star_verbose = 0;
             n = *tmp__;                                                   \
         }                                                                 \
         if (!(fabs((a) - (b)) <= n)) {                                    \
-            _STAR_FAIL("ASS_KINDAEQ(%s, %s) failed: %lf !≈ %lf (degree %lf)\n", \
+            _STAR_FAIL("ASS_KINDAEQ(%s, %s) failed: %lf !≈ %lf (degree %lf)", \
                        #a, #b, (double)(a), (double)(b), n);              \
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_KINDAEQ(%s, %s) passed: %lf ≈ %lf (degree %lf)\n", \
+            _STAR_PASS("ASS_KINDAEQ(%s, %s) passed: %lf ≈ %lf (degree %lf)", \
                        #a, #b, (double)(a), (double)(b), n);              \
         }                                                                 \
     } while (0)
@@ -150,13 +164,13 @@ static const int _star_verbose = 0;
             n = *tmp__;                                                   \
         }                                                                 \
         if ((fabs((a) - (b)) <= n)) {                                     \
-            _STAR_FAIL("ASS_KINDAEQ(%s, %s) failed: %lf ≈ %lf (degree %lf)\n", \
+            _STAR_FAIL("ASS_KINDAEQ(%s, %s) failed: %lf ≈ %lf (degree %lf)", \
                        #a, #b, (double)(a), (double)(b), n);              \
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_KINDAEQ(%s, %s) passed: %lf !≈ %lf (degree %lf)\n", \
+            _STAR_PASS("ASS_KINDAEQ(%s, %s) passed: %lf !≈ %lf (degree %lf)", \
                        #a, #b, (double)(a), (double)(b), n);              \
         }                                                                 \
     } while (0)
@@ -165,12 +179,12 @@ static const int _star_verbose = 0;
     do {                                                                  \
         _star_asserts_total++;                                            \
         if (!(expr)) {                                                    \
-            _STAR_FAIL("ASS_TRUE(%s) failed\n", #expr);                   \
+            _STAR_FAIL("ASS_TRUE(%s) failed", #expr);                     \
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_TRUE(%s) passed\n", #expr);                   \
+            _STAR_PASS("ASS_TRUE(%s) passed", #expr);                     \
         }                                                                 \
     } while (0)
 
@@ -178,12 +192,12 @@ static const int _star_verbose = 0;
     do {                                                                  \
         _star_asserts_total++;                                            \
         if ((expr)) {                                                     \
-            _STAR_FAIL("ASS_FALSE(%s) failed\n", #expr);                  \
+            _STAR_FAIL("ASS_FALSE(%s) failed", #expr);                    \
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_FALSE(%s) passed\n", #expr);                  \
+            _STAR_PASS("ASS_FALSE(%s) passed", #expr);                    \
         }                                                                 \
     } while (0)
 
@@ -191,12 +205,12 @@ static const int _star_verbose = 0;
     do {                                                                  \
         _star_asserts_total++;                                            \
         if (memcmp(&(a), &(b), sizeof((a)))) {                            \
-            _STAR_FAIL("ASS_IS(%s, %s) failed\n", #a, #b);                \
+            _STAR_FAIL("ASS_IS(%s, %s) failed", #a, #b);                  \
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_IS(%s, %s) passed\n", #a, #b);                \
+            _STAR_PASS("ASS_IS(%s, %s) passed", #a, #b);                  \
         }                                                                 \
     } while (0)
 
@@ -204,12 +218,12 @@ static const int _star_verbose = 0;
     do {                                                                  \
         _star_asserts_total++;                                            \
         if (!memcmp(&(a), &(b), sizeof((a)))) {                           \
-            _STAR_FAIL("ASS_ISNT(%s, %s) failed\n", #a, #b);              \
+            _STAR_FAIL("ASS_ISNT(%s, %s) failed", #a, #b);                \
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_ISNT(%s, %s) passed\n", #a, #b);              \
+            _STAR_PASS("ASS_ISNT(%s, %s) passed", #a, #b);                \
         }                                                                 \
     } while (0)
 
@@ -218,12 +232,12 @@ static const int _star_verbose = 0;
     do {                                                                  \
         _star_asserts_total++;                                            \
         if ((expr) != NULL) {                                             \
-            _STAR_FAIL("ASS_ISNULL(%s) failed\n", #expr);                 \
+            _STAR_FAIL("ASS_ISNULL(%s) failed", #expr);                   \
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_ISNULL(%s) passed\n", #expr);                 \
+            _STAR_PASS("ASS_ISNULL(%s) passed", #expr);                   \
         }                                                                 \
     } while (0)
 
@@ -231,19 +245,19 @@ static const int _star_verbose = 0;
     do {                                                                  \
         _star_asserts_total++;                                            \
         if ((expr) == NULL) {                                             \
-            _STAR_FAIL("ASS_ISNTNULL(%s) failed\n", #expr);               \
+            _STAR_FAIL("ASS_ISNTNULL(%s) failed", #expr);                 \
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_ISNTNULL(%s) passed\n", #expr);               \
+            _STAR_PASS("ASS_ISNTNULL(%s) passed", #expr);                 \
         }                                                                 \
     } while (0)
 
 /* Run Functionality */
 #if defined(STAR_NO_ENTRY)
 static inline int star_run(int o) {
-    if (o) printf("Running %zu tests...\n", _star_test_count);
+    if (o) printf("\033[1mRunning %zu tests...\033[0m\n", _star_test_count);
 
     int passed_tests = 0;
     int failed_tests = 0;
@@ -261,17 +275,18 @@ static inline int star_run(int o) {
         size_t test_passed = test_total - test_failed;
 
         if (_star_current_failed) {
-            _STAR_FAIL("%s: %zu/%zu assertions passed (%zu failed)\n", _star_tests[i].name, test_passed, test_total, test_failed);
+            _STAR_TEST_FAIL("%s: %zu/%zu assertions passed (%zu failed)", _star_tests[i].name, test_passed, test_total, test_failed);
             failed_tests++;
         } else {
-            _STAR_PASS("%s: %zu/%zu assertions passed\n", _star_tests[i].name, test_passed, test_total);
+            _STAR_TEST_PASS("%s: %zu/%zu assertions passed", _star_tests[i].name, test_passed, test_total);
             passed_tests++;
         }
     }
 
     size_t total_passed_asserts = _star_asserts_total - _star_asserts_failed;
 
-    if (o) _STAR_SUMMARY("%d/%zu tests passed, %d failed ""(%zu/%zu assertions passed)\n", passed_tests, _star_test_count, failed_tests,total_passed_asserts, _star_asserts_total);
+    if (o) _STAR_SUMMARY("%d/%zu tests passed, %d failed " "(%zu/%zu assertions passed)", 
+        passed_tests, _star_test_count, failed_tests, total_passed_asserts, _star_asserts_total);
 
     return failed_tests ? 1 : 0;
 }
@@ -295,17 +310,17 @@ int main(int argc, char** argv) {
         size_t test_passed = test_total - test_failed;
 
         if (_star_current_failed) {
-            _STAR_FAIL("%s: %zu/%zu assertions passed (%zu failed)\n", _star_tests[i].name, test_passed, test_total, test_failed);
+            _STAR_TEST_FAIL("%s: %zu/%zu assertions passed (%zu failed)", _star_tests[i].name, test_passed, test_total, test_failed);
             failed_tests++;
         } else {
-            _STAR_PASS("%s: %zu/%zu assertions passed\n", _star_tests[i].name, test_passed, test_total);
+            _STAR_TEST_PASS("%s: %zu/%zu assertions passed", _star_tests[i].name, test_passed, test_total);
             passed_tests++;
         }
     }
 
     size_t total_passed_asserts = _star_asserts_total - _star_asserts_failed;
 
-    _STAR_SUMMARY("%d/%zu tests passed, %d failed " "(%zu/%zu assertions passed)\n", 
+    _STAR_SUMMARY("%d/%zu tests passed, %d failed " "(%zu/%zu assertions passed)", 
         passed_tests, _star_test_count, failed_tests, total_passed_asserts, _star_asserts_total);
 
     return failed_tests ? 1 : 0;
@@ -320,9 +335,14 @@ int main(int argc, char** argv) {
 
 /*
     Revision history:     
-        0.3.2  (2025-11-23)  Minor changes: automatic file-line display in _STAR_FAIL + top-file description.
-        0.3.1  (2025-11-23)  Minor changes: global test count is now size_t, user-irrelevant identifiers
-                             now prefixed with `_star`.
+        0.4.0  (2025-11-23)  Many changes:
+                                - 0.3.2: automatic file-line display in _STAR_FAIL + top-file description.
+                                - 0.3.1: global test count is now size_t, user-irrelevant identifiers
+                                         now prefixed with `_star`.
+                                - 0.3.3: Non-fatal option to *not* abort after failing an assert.
+                                - 0.3.4: Verbose asserts to indicate which asserts passed (even if test failed).
+                                - 0.3.5: More informative output with passed tests and asserts.
+                                - 0.4.0: Added object and null checking asserts.
         0.3.0  (2025-11-22)  Added more equality + bool asserts.                      
         0.2.0  (2025-11-22)  Created test running and two asserts. `main()` hijacking toggleable and
                              ASCII coloring also added.
