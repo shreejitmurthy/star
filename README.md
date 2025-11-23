@@ -9,12 +9,14 @@ STAR (Super Technical And Reliable) testing suite written in C.
 Currently, 256 tests can be written.
 #### Equality and Inequality
 - `ASS_EQ(a, b)` / `ASS_NEQ(a, b)` (compare `double`)
-- `ASS_KINDAEQ(a, b, d)` / `ASS_KINDANEQ(a, b, d)` (Not/AlmostEqual functionality)
+- `ASS_KINDAEQ(a, b, d)` / `ASS_KINDANEQ(a, b, d)` (Not/AlmostEqual functionality, difference defaulted to 6.9)
 
 #### Boolean / Truthiness
 - `ASS_TRUE(int cond)` / `ASS_FALSE(int cond)`
 - `ASS_IS(expr)` / `ASS_ISNT(expr)` (Objects - structs, arrays, etc.)
 - `ASS_ISNULL(expr)` / `ASS_ISNTNULL` (Null checker)
+
+There is also support for custom messages by adding an `M` at the end of the function name: `ASS_EQM, ASS_KINDANEQM, ...`. An example of this is below.
 
 ### Noncomprehensive Example
 ```c
@@ -22,8 +24,8 @@ Currently, 256 tests can be written.
 
 TEST(test_addition) {
     float x = 2.2 + 3.3;
-    // ASS_EQ(x, 5.6);  // this will fail & abort the testcase.
-    ASS_KINDANEQ(x, 12.6, NULL);  // difference defaulted to 6.9
+    ASS_NEQM(x, 5.5, "wow who knew it was equal");
+    ASS_KINDANEQ(x, 12.3, NULL);
 }
 
 TEST(test_boolean) {
@@ -48,6 +50,11 @@ TEST(test_nulls) {
     ASS_ISNULL("expression");
 }
 
+TEST(test_strings) {
+    ASS_STREQ("foo", "bar");
+    ASS_STRNEQ("hello", "world!");
+}
+
 // Automatic test case running by "hijacking" the `main()` function.
 // Use #define STAR_NO_ENTRY *before* including `star.h` to disable this.
 // Then use star_run(bool extra_output) to run all tests.
@@ -55,8 +62,10 @@ TEST(test_nulls) {
 **Colored Output:**
 <!-- ![Epic Output](scs/example.png) -->
 <p align="center">
-    <img src="scs/example.png" width="464">
+    <img src="scs/example1.png" width="464">
 </p>
+
+Only 8 asserts are recognised because of fatal assertions that abort the rest of the function and subsequently don't reach the next assert (in `test_strings` and `test_addition`).
 
 ### Macros
 All the assertions are function-like macros, but there are a few others that, if you choose, should be defined before `#include`-ing the header:
@@ -77,7 +86,7 @@ All the assertions are function-like macros, but there are a few others that, if
 - [x] More informative outputs
 - [x] Object truthiness (struct, array, etc.)
 - [x] Epsilon-based floating-point comparison
-- [ ] String comparing.
-- [ ] Custom fail messages
+- [x] String comparing
+- [x] Custom fail messages
 - [ ] Collections / Sequences
 - [ ] Parameterized testing
