@@ -95,6 +95,7 @@ All the assertions are function-like macros, but there are a few others that, if
 - [x] Epsilon-based floating-point comparison
 - [x] String comparing
 - [x] Custom fail messages
+- [ ] Generic overhaul
 - [ ] Collections / Sequences
 - [ ] Parameterized testing
 - [ ] Assertion Introspection
