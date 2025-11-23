@@ -103,8 +103,8 @@ static const int _star_verbose = 0;
     }                                                                     \
     void name()
 
-static inline int __star_nearly_equal(double a, double b) {
-    if (a == b) return 1;
+static inline bool __star_nearly_equal(double a, double b) {
+    if (a == b) return true;
     double diff = fabs(a - b);
     double norm = fabs(a) + fabs(b);
     double scale = DBL_EPSILON * norm;
@@ -584,6 +584,108 @@ static inline bool __assert_kindaeq(double a, double b, double n, bool negate) {
         }                                                                 \
     } while (0)
 
+// Collections / Sequences
+#define __STAR_VALUE_EQUALS(a, b) _Generic((a),                           \
+    const char*: strcmp,                                                  \
+    char*: strcmp,                                                        \
+    default: __star_value_equals_default                                  \
+)(a, b)
+
+static inline int __star_value_equals_default(double a, double b) {
+    return __star_nearly_equal(a, b);
+}
+
+#define ASS_IN(item, container)                                               \
+    do {                                                                      \
+        _star_asserts_total++;                                                \
+        int _star_found = 0;                                                  \
+        for (int i = 0;                                                       \
+             i < (int)(sizeof(container) / sizeof((container)[0]));           \
+             i++) {                                                           \
+            if (__STAR_VALUE_EQUALS((container)[i], (item))) {                \
+                _star_found = 1;                                              \
+                if (_star_verbose)                                            \
+                    _STAR_PASS("ASS_IN(%s, %s) passed: %s found at index %d", \
+                              #item, #container, #item, i);                   \
+                break;                                                        \
+            }                                                                 \
+        }                                                                     \
+        if (!_star_found) {                                                   \
+            _STAR_FAIL("ASS_IN(%s, %s) failed: %s not found",                 \
+                      #item, #container, #item);                              \
+            __star_increment_failed();                                        \
+            if (_star_fatal) return;                                          \
+        }                                                                     \
+    } while (0)
+
+
+#define ASS_INM(item, container, m)                                           \
+    do {                                                                      \
+        _star_asserts_total++;                                                \
+        int _star_found = 0;                                                  \
+        for (int i = 0;                                                       \
+             i < (int)(sizeof(container) / sizeof((container)[0]));           \
+             i++) {                                                           \
+            if (__STAR_VALUE_EQUALS((container)[i], (item))) {                \
+                _star_found = 1;                                              \
+                if (_star_verbose)                                            \
+                    _STAR_PASS("ASS_IN(%s, %s) passed: %s found at index %d", \
+                              #item, #container, #item, i);                   \
+                break;                                                        \
+            }                                                                 \
+        }                                                                     \
+        if (!_star_found) {                                                   \
+            _STAR_FAIL("ASS_IN(%s, %s) %s",                                   \
+                      #item, #container, _STAR_CUSTOM(m));                    \
+            __star_increment_failed();                                        \
+            if (_star_fatal) return;                                          \
+        }                                                                     \
+    } while (0)
+
+#define ASS_NOTIN(item, container)                                            \
+    do {                                                                      \
+        _star_asserts_total++;                                                \
+        int _star_found = 0;                                                  \
+        for (int i = 0;                                                       \
+             i < (int)(sizeof(container) / sizeof((container)[0]));           \
+             i++) {                                                           \
+            if (__STAR_VALUE_EQUALS((container)[i], (item))) {                \
+                _star_found = 1;                                              \
+                _STAR_FAIL("ASS_NOTIN(%s, %s) failed: %s found at index %d",  \
+                          #item, #container, #item, i);                       \
+                __star_increment_failed();                                    \
+                if (_star_fatal) return;                                      \
+                break;                                                        \
+            }                                                                 \
+        }                                                                     \
+        if (!_star_found && _star_verbose) {                                  \
+            _STAR_PASS("ASS_NOTIN(%s, %s) passed: %s not found",              \
+                      #item, #container, #item);                              \
+        }                                                                     \
+    } while (0)
+
+#define ASS_NOTINM(item, container, m)                                        \
+    do {                                                                      \
+        _star_asserts_total++;                                                \
+        int _star_found = 0;                                                  \
+        for (int i = 0;                                                       \
+             i < (int)(sizeof(container) / sizeof((container)[0]));           \
+             i++) {                                                           \
+            if (__STAR_VALUE_EQUALS((container)[i], (item))) {                \
+                _star_found = 1;                                              \
+                _STAR_FAIL("ASS_NOTIN(%s, %s) %s",                            \
+                          #item, #container, _STAR_CUSTOM(m));                \
+                __star_increment_failed();                                    \
+                if (_star_fatal) return;                                      \
+                break;                                                        \
+            }                                                                 \
+        }                                                                     \
+        if (!_star_found && _star_verbose) {                                  \
+            _STAR_PASS("ASS_NOTIN(%s, %s) passed: %s not found",              \
+                      #item, #container, #item);                              \
+        }                                                                     \
+    } while (0)
+
 // Forced fail
 #define DIE()                \
     do {                     \
@@ -671,7 +773,10 @@ int main(int argc, char** argv) {
 
 /*
     Revision history:
-        0.5.1  (2025-11-24)  Custom message color is now normal intensity cyan.   
+        0.6.0  (2025-11-24)  Changes:
+                                - 0.5.1: Custom message color is now normal intensity cyan. 
+                                - 0.5.2: Consistent `bool` instead of `int` for boolean return values.
+                                - 0.6.0: Added some basic collection assertions (more to come)  
         0.5.0  (2025-11-24)  Changes:
                                 - 0.4.1: `STAR_VERBOSE` also works in addition to `STAR_VERBOSE_ASSERTS`.
                                 - 0.4.2: Now using epsilon-based floating point comparison.
