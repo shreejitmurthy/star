@@ -61,7 +61,7 @@ TEST(test_strings) {
 ```
 **Colored Output:**
 <p align="center">
-    <img src="scs/example2.png" width="800">
+    <img src="scs/example2.png" width="600">
 </p>
 
 Only 8 asserts are recognised because of fatal assertions that abort the rest of the function and subsequently don't reach the next assert (in `test_strings` and `test_addition`).
