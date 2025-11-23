@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <float.h>
 #include <string.h>
 
 #ifdef __cplusplus
@@ -102,11 +103,21 @@ static const int _star_verbose = 0;
 
 /* ASSERTS */
 
+
+static inline int __star_nearly_equal(double a, double b) {
+    if (a == b) return 1;
+    double diff = fabs(a - b);
+    double norm = fabs(a) + fabs(b);
+    double scale = DBL_EPSILON * norm;
+    if (scale < DBL_MIN) scale = DBL_MIN;
+    return diff < scale;
+}
+
 // Equality & Inequality
 #define ASS_EQ(a, b)                                                      \
     do {                                                                  \
         _star_asserts_total++;                                            \
-        if ((a) != (b)) {                                                 \
+        if (!__star_nearly_equal((a), (b))) {                             \
             _STAR_FAIL("ASS_EQ(%s, %s) failed: %lf != %lf",               \
                        #a, #b, (double)(a), (double)(b));                 \
             _star_asserts_failed++;                                       \
@@ -121,7 +132,7 @@ static const int _star_verbose = 0;
 #define ASS_NEQ(a, b)                                                     \
     do {                                                                  \
         _star_asserts_total++;                                            \
-        if ((a) == (b)) {                                                 \
+        if (__star_nearly_equal((a), (b))) {                              \
             _STAR_FAIL("ASS_NEQ(%s, %s) failed: %lf == %lf",              \
                        #a, #b, (double)(a), (double)(b));                 \
             _star_asserts_failed++;                                       \
@@ -335,7 +346,8 @@ int main(int argc, char** argv) {
 
 /*
     Revision history:     
-        0.4.1  (2025-12-23)  `STAR_VERBOSE` also works in addition to `STAR_VERBOSE_ASSERTS`.
+        0.4.2  (2025-12-23)  `STAR_VERBOSE` also works in addition to `STAR_VERBOSE_ASSERTS`. Using epsilon
+                              -based floating point comparison.
         0.4.0  (2025-11-23)  Many changes:
                                 - 0.3.2: automatic file-line display in _STAR_FAIL + top-file description.
                                 - 0.3.1: global test count is now size_t, user-irrelevant identifiers
