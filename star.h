@@ -7,7 +7,7 @@
             #include "star.h"
         Define `STAR_NO_COLOR` to disable ASCII coloring:
         Define `STAR_NON_FATAL` so failed assertions don't abort the test entirely.
-        Define `STAR_VERBOSE_ASSERTS` for per-assert pass output.
+        Define `STAR_VEROBSE` or `STAR_VERBOSE_ASSERTS` for per-assert pass output.
         
         See the README.md for all features.
 
@@ -48,7 +48,7 @@ static const int _star_fatal = 0;
 static const int _star_fatal = 1;
 #endif
 
-#ifdef STAR_VERBOSE_ASSERTS
+#if defined(STAR_VERBOSE_ASSERTS) || defined(STAR_VERBOSE)
 static const int _star_verbose = 1;
 #else
 static const int _star_verbose = 0;
@@ -69,9 +69,9 @@ static const int _star_verbose = 0;
         fprintf(stderr, format "\n", ##__VA_ARGS__);          \
     } while (0)
 
-#define _STAR_PASS(format, ...)    printf("\033[32m[PASS]\033[0m " format "\n", ##__VA_ARGS__)
+#define _STAR_PASS(format, ...)         printf("\033[32m[PASS]\033[0m " format "\n", ##__VA_ARGS__)
 #define _STAR_TEST_PASS(format, ...)    printf("\033[32m[TEST PASSED]\033[0m " format "\n", ##__VA_ARGS__)
-#define _STAR_SUMMARY(format, ...) printf("\n\033[1mTechnical and Reliable Summary:\033[0m " format "\n", ##__VA_ARGS__)
+#define _STAR_SUMMARY(format, ...)      printf("\n\033[1mTechnical and Reliable Summary:\033[0m " format "\n", ##__VA_ARGS__)
 #else
 #define _STAR_FAIL(format, ...)                          \
     do {                                                 \
@@ -86,9 +86,9 @@ static const int _star_verbose = 0;
         fprintf(stderr, format "\n", ##__VA_ARGS__);     \
     } while (0)
 
-#define _STAR_PASS(format, ...)    printf("[PASS] " format "\n", ##__VA_ARGS__)
+#define _STAR_PASS(format, ...)         printf("[PASS] " format "\n", ##__VA_ARGS__)
 #define _STAR_TEST_PASS(format, ...)    printf("[TEST PASSED] " format "\n", ##__VA_ARGS__)
-#define _STAR_SUMMARY(format, ...) printf("\nTechnical and Reliable Summary: " format "\n", ##__VA_ARGS__)
+#define _STAR_SUMMARY(format, ...)      printf("\nTechnical and Reliable Summary: " format "\n", ##__VA_ARGS__)
 #endif /* STAR_NO_COLOR */
 
 // Test "Constructor"
@@ -335,6 +335,7 @@ int main(int argc, char** argv) {
 
 /*
     Revision history:     
+        0.4.1  (2025-12-23)  `STAR_VERBOSE` also works in addition to `STAR_VERBOSE_ASSERTS`.
         0.4.0  (2025-11-23)  Many changes:
                                 - 0.3.2: automatic file-line display in _STAR_FAIL + top-file description.
                                 - 0.3.1: global test count is now size_t, user-irrelevant identifiers
