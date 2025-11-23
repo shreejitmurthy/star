@@ -21,6 +21,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <math.h>
 #include <float.h>
 #include <string.h>
@@ -57,34 +58,35 @@ static const int _star_verbose = 0;
 
 
 #if !defined(STAR_NO_COLOR)
-#define _STAR_FAIL(format, ...)                          \
-    do {                                                 \
-        fprintf(stderr, "\033[31m[FAIL]\033[0m %s:%d: ", \
-                __FILE__, __LINE__);                     \
-        fprintf(stderr, format "\n", ##__VA_ARGS__);     \
+#define _STAR_FAIL(format, ...)                             \
+    do {                                                    \
+        fprintf(stderr, "\033[1;31m[FAIL]\033[0m %s:%d: ",  \
+                __FILE__, __LINE__);                        \
+        fprintf(stderr, format "\n", ##__VA_ARGS__);        \
     } while (0)
 
-#define _STAR_TEST_FAIL(format, ...)                          \
-    do {                                                      \
-        fprintf(stderr, "\033[31m[TEST_FAILED]\033[0m ");     \
-        fprintf(stderr, format "\n", ##__VA_ARGS__);          \
+#define _STAR_TEST_FAIL(format, ...)                        \
+    do {                                                    \
+        fprintf(stderr, "\033[1;31m[TEST FAILED]\033[0m "); \
+        fprintf(stderr, format "\n", ##__VA_ARGS__);        \
     } while (0)
 
-#define _STAR_PASS(format, ...)         printf("\033[32m[PASS]\033[0m " format "\n", ##__VA_ARGS__)
-#define _STAR_TEST_PASS(format, ...)    printf("\033[32m[TEST PASSED]\033[0m " format "\n", ##__VA_ARGS__)
+#define _STAR_PASS(format, ...)         printf("\033[1;32m[PASS]\033[0m " format "\n", ##__VA_ARGS__)
+#define _STAR_TEST_PASS(format, ...)    printf("\033[1;32m[TEST PASSED]\033[0m " format "\n", ##__VA_ARGS__)
 #define _STAR_SUMMARY(format, ...)      printf("\n\033[1mTechnical and Reliable Summary:\033[0m " format "\n", ##__VA_ARGS__)
+#define _STAR_CUSTOM(msg) "\033[96m" msg "\033[0m"
 #else
-#define _STAR_FAIL(format, ...)                          \
-    do {                                                 \
-        fprintf(stderr, "[FAIL] %s:%d: ",                \
-                __FILE__, __LINE__);                     \
-        fprintf(stderr, format "\n", ##__VA_ARGS__);     \
+#define _STAR_FAIL(format, ...)                      \
+    do {                                             \
+        fprintf(stderr, "[FAIL] %s:%d: ",            \
+                __FILE__, __LINE__);                 \
+        fprintf(stderr, format "\n", ##__VA_ARGS__); \
     } while (0)
 
-#define _STAR_TEST_FAIL(format, ...)                     \
-    do {                                                 \
-        fprintf(stderr, "[FAIL] ");                      \
-        fprintf(stderr, format "\n", ##__VA_ARGS__);     \
+#define _STAR_TEST_FAIL(format, ...)                 \
+    do {                                             \
+        fprintf(stderr, "[TEST FAILed] ");           \
+        fprintf(stderr, format "\n", ##__VA_ARGS__); \
     } while (0)
 
 #define _STAR_PASS(format, ...)         printf("[PASS] " format "\n", ##__VA_ARGS__)
@@ -102,8 +104,6 @@ static const int _star_verbose = 0;
     void name()
 
 /* ASSERTS */
-
-
 static inline int __star_nearly_equal(double a, double b) {
     if (a == b) return 1;
     double diff = fabs(a - b);
@@ -113,15 +113,53 @@ static inline int __star_nearly_equal(double a, double b) {
     return diff < scale;
 }
 
+static inline bool __assert_eq(double a, double b, bool negate) {
+    _star_asserts_total++;
+
+    bool equal = __star_nearly_equal(a, b);
+    bool ok = negate ? !equal : equal;
+
+    if (!ok) {
+        _star_asserts_failed++;
+        _star_current_failed = 1;
+    }
+
+    return ok;
+}
+
+static inline bool __assert_streq(char* a, char* b, bool negate) {
+    _star_asserts_total++;
+
+    bool equal = strcmp((a), (b)) == 0 ? true : false;
+    bool ok = negate ? !equal : equal;
+
+    if (!ok) {
+        _star_asserts_failed++;
+        _star_current_failed = 1;
+    }
+
+    return ok;
+}
+
+static inline bool __assert_kindaeq(double a, double b, double n, bool negate) {
+    bool equal = (fabs((a) - (b)) <= n) ? true : false;
+    bool ok = negate ? !equal : equal;
+
+    if (!ok) {
+        _star_asserts_failed++;
+        _star_current_failed = 1;
+    }
+
+    return ok;
+}
+
+/* MACROS */
 // Equality & Inequality
 #define ASS_EQ(a, b)                                                      \
     do {                                                                  \
-        _star_asserts_total++;                                            \
-        if (!__star_nearly_equal((a), (b))) {                             \
+        if (!__assert_eq((double)(a), (double)(b), false)) {              \
             _STAR_FAIL("ASS_EQ(%s, %s) failed: %lf != %lf",               \
                        #a, #b, (double)(a), (double)(b));                 \
-            _star_asserts_failed++;                                       \
-            _star_current_failed = 1;                                     \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
             _STAR_PASS("ASS_EQ(%s, %s) passed: %lf == %lf",               \
@@ -129,14 +167,22 @@ static inline int __star_nearly_equal(double a, double b) {
         }                                                                 \
     } while (0)
 
+#define ASS_EQM(a, b, m)                                                  \
+    do {                                                                  \
+        if (!__assert_eq((double)(a), (double)(b), false)) {              \
+            _STAR_FAIL("ASS_EQM(%s, %s) %s", #a, #b, _STAR_CUSTOM(m));    \
+            if (_star_fatal) return;                                      \
+        } else if (_star_verbose) {                                       \
+            _STAR_PASS("ASS_EQM(%s, %s) passed: %lf == %lf",              \
+                       #a, #b, (double)(a), (double)(b));                 \
+        }                                                                 \
+    } while (0)
+
 #define ASS_NEQ(a, b)                                                     \
     do {                                                                  \
-        _star_asserts_total++;                                            \
-        if (__star_nearly_equal((a), (b))) {                              \
+        if (!__assert_eq((double)(a), (double)(b), true)) {               \
             _STAR_FAIL("ASS_NEQ(%s, %s) failed: %lf == %lf",              \
                        #a, #b, (double)(a), (double)(b));                 \
-            _star_asserts_failed++;                                       \
-            _star_current_failed = 1;                                     \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
             _STAR_PASS("ASS_NEQ(%s, %s) passed: %lf != %lf",              \
@@ -144,6 +190,65 @@ static inline int __star_nearly_equal(double a, double b) {
         }                                                                 \
     } while (0)
 
+#define ASS_NEQM(a, b, m)                                                 \
+    do {                                                                  \
+        if (!__assert_eq((double)(a), (double)(b), true)) {               \
+            _STAR_FAIL("ASS_NEQM(%s, %s) %s", #a, #b, _STAR_CUSTOM(m));   \
+            if (_star_fatal) return;                                      \
+        } else if (_star_verbose) {                                       \
+            _STAR_PASS("ASS_NEQM(%s, %s) passed: %lf != %lf",             \
+                       #a, #b, (double)(a), (double)(b));                 \
+        }                                                                 \
+    } while (0)
+
+#define ASS_STREQ(a, b)                                                   \
+    do {                                                                  \
+        if (!__assert_streq(a, b, false)) {                               \
+            _STAR_FAIL("ASS_STREQ(%s, %s) failed: %s != %s",              \
+                       #a, #b, (a), (b));                                 \
+            if (_star_fatal) return;                                      \
+        } else if (_star_verbose) {                                       \
+            _STAR_PASS("ASS_STREQ(%s, %s) passed: %s = %s",               \
+                       #a, #b, (a), (b));                                 \
+        }                                                                 \
+    } while (0)
+
+#define ASS_STREQM(a, b, m)                                               \
+    do {                                                                  \
+        if (!__assert_streq(a, b, false)) {                               \
+            _STAR_FAIL("ASS_STREQM(%s, %s) %s",                           \
+                #a, #b, _STAR_CUSTOM(m));                                 \
+            if (_star_fatal) return;                                      \
+        } else if (_star_verbose) {                                       \
+            _STAR_PASS("ASS_STREQM(%s, %s) passed: %s = %s",              \
+                       #a, #b, (a), (b));                                 \
+        }                                                                 \
+    } while (0)
+
+
+#define ASS_STRNEQ(a, b)                                                  \
+    do {                                                                  \
+        if (!__assert_streq(a, b, true)) {                                \
+            _STAR_FAIL("ASS_STREQ(%s, %s) failed: %s = %s",               \
+                       #a, #b, (a), (b));                                 \
+            if (_star_fatal) return;                                      \
+        } else if (_star_verbose) {                                       \
+            _STAR_PASS("ASS_STREQ(%s, %s) passed: %s != %s",              \
+                       #a, #b, (a), (b));                                 \
+        }                                                                 \
+    } while (0)
+
+#define ASS_STRNEQM(a, b, m)                                              \
+    do {                                                                  \
+        if (!__assert_streq(a, b, true)) {                                \
+            _STAR_FAIL("ASS_STNREQM(%s, %s) %s",                          \
+                #a, #b, _STAR_CUSTOM(m));                                 \
+            if (_star_fatal) return;                                      \
+        } else if (_star_verbose) {                                       \
+            _STAR_PASS("ASS_STNREQM(%s, %s) passed: %s != %s",            \
+                       #a, #b, (a), (b));                                 \
+        }                                                                 \
+    } while (0)
 
 // Look at this song and dance I have to do... (easily preventable if I wasn't stubborn)
 #define ASS_KINDAEQ(a, b, dptr)                                           \
@@ -154,17 +259,34 @@ static inline int __star_nearly_equal(double a, double b) {
             const double *tmp__ = (const double *)(dptr);                 \
             n = *tmp__;                                                   \
         }                                                                 \
-        if (!(fabs((a) - (b)) <= n)) {                                    \
+        if (!__assert_kindaeq((a), (b), n, false)) {                      \
             _STAR_FAIL("ASS_KINDAEQ(%s, %s) failed: %lf !≈ %lf (degree %lf)", \
                        #a, #b, (double)(a), (double)(b), n);              \
-            _star_asserts_failed++;                                       \
-            _star_current_failed = 1;                                     \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
             _STAR_PASS("ASS_KINDAEQ(%s, %s) passed: %lf ≈ %lf (degree %lf)", \
                        #a, #b, (double)(a), (double)(b), n);              \
         }                                                                 \
     } while (0)
+
+#define ASS_KINDAEQM(a, b, dptr, m)                                       \
+    do {                                                                  \
+        _star_asserts_total++;                                            \
+        double n = 6.9;                                                   \
+        if ((dptr) != NULL) {                                             \
+            const double *tmp__ = (const double *)(dptr);                 \
+            n = *tmp__;                                                   \
+        }                                                                 \
+        if (!__assert_kindaeq((a), (b), n, false)) {                      \
+            _STAR_FAIL("ASS_KINDAEQM(%s, %s) %s",                         \
+                #a, #b, _STAR_CUSTOM(m));                                 \
+            if (_star_fatal) return;                                      \
+        } else if (_star_verbose) {                                       \
+            _STAR_PASS("ASS_KINDAEQM(%s, %s) passed: %lf ≈ %lf (degree %lf)", \
+                       #a, #b, (double)(a), (double)(b), n);              \
+        }                                                                 \
+    } while (0)
+
 
 #define ASS_KINDANEQ(a, b, dptr)                                          \
     do {                                                                  \
@@ -174,14 +296,30 @@ static inline int __star_nearly_equal(double a, double b) {
             const double *tmp__ = (const double *)(dptr);                 \
             n = *tmp__;                                                   \
         }                                                                 \
-        if ((fabs((a) - (b)) <= n)) {                                     \
+        if (__assert_kindaeq((a), (b), n, true)) {                        \
             _STAR_FAIL("ASS_KINDAEQ(%s, %s) failed: %lf ≈ %lf (degree %lf)", \
                        #a, #b, (double)(a), (double)(b), n);              \
-            _star_asserts_failed++;                                       \
-            _star_current_failed = 1;                                     \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
             _STAR_PASS("ASS_KINDAEQ(%s, %s) passed: %lf !≈ %lf (degree %lf)", \
+                       #a, #b, (double)(a), (double)(b), n);              \
+        }                                                                 \
+    } while (0)
+
+#define ASS_KINDANEQM(a, b, dptr, m)                                      \
+    do {                                                                  \
+        _star_asserts_total++;                                            \
+        double n = 6.9;                                                   \
+        if ((dptr) != NULL) {                                             \
+            const double *tmp__ = (const double *)(dptr);                 \
+            n = *tmp__;                                                   \
+        }                                                                 \
+        if (!__assert_kindaeq((a), (b), n, true)) {                       \
+            _STAR_FAIL("ASS_KINDANEQM(%s, %s) %s",                        \
+                #a, #b, _STAR_CUSTOM(m));                                 \
+            if (_star_fatal) return;                                      \
+        } else if (_star_verbose) {                                       \
+            _STAR_PASS("ASS_KINDANEQM(%s, %s) passed: %lf ≈ %lf (degree %lf)", \
                        #a, #b, (double)(a), (double)(b), n);              \
         }                                                                 \
     } while (0)
@@ -191,6 +329,19 @@ static inline int __star_nearly_equal(double a, double b) {
         _star_asserts_total++;                                            \
         if (!(expr)) {                                                    \
             _STAR_FAIL("ASS_TRUE(%s) failed", #expr);                     \
+            _star_asserts_failed++;                                       \
+            _star_current_failed = 1;                                     \
+            if (_star_fatal) return;                                      \
+        } else if (_star_verbose) {                                       \
+            _STAR_PASS("ASS_TRUE(%s) passed", #expr);                     \
+        }                                                                 \
+    } while (0)
+
+#define ASS_TRUEM(expr, m)                                                \
+    do {                                                                  \
+        _star_asserts_total++;                                            \
+        if (!(expr)) {                                                    \
+            _STAR_FAIL("ASS_TRUE(%s) %s", #expr, _STAR_CUSTOM(m));        \
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
             if (_star_fatal) return;                                      \
@@ -212,6 +363,19 @@ static inline int __star_nearly_equal(double a, double b) {
         }                                                                 \
     } while (0)
 
+#define ASS_FALSEM(expr, m)                                               \
+    do {                                                                  \
+        _star_asserts_total++;                                            \
+        if ((expr)) {                                                     \
+            _STAR_FAIL("ASS_FALSE(%s) %s", #expr, _STAR_CUSTOM(m));       \
+            _star_asserts_failed++;                                       \
+            _star_current_failed = 1;                                     \
+            if (_star_fatal) return;                                      \
+        } else if (_star_verbose) {                                       \
+            _STAR_PASS("ASS_FALSE(%s) passed", #expr);                    \
+        }                                                                 \
+    } while (0)
+
 #define ASS_IS(a, b)                                                      \
     do {                                                                  \
         _star_asserts_total++;                                            \
@@ -225,11 +389,37 @@ static inline int __star_nearly_equal(double a, double b) {
         }                                                                 \
     } while (0)
 
+#define ASS_ISM(a, b, m)                                                  \
+    do {                                                                  \
+        _star_asserts_total++;                                            \
+        if (memcmp(&(a), &(b), sizeof((a)))) {                            \
+            _STAR_FAIL("ASS_IS(%s, %s) %s", #a, #b, _STAR_CUSTOM(m));     \
+            _star_asserts_failed++;                                       \
+            _star_current_failed = 1;                                     \
+            if (_star_fatal) return;                                      \
+        } else if (_star_verbose) {                                       \
+            _STAR_PASS("ASS_IS(%s, %s) passed", #a, #b);                  \
+        }                                                                 \
+    } while (0)
+
 #define ASS_ISNT(a, b)                                                    \
     do {                                                                  \
         _star_asserts_total++;                                            \
         if (!memcmp(&(a), &(b), sizeof((a)))) {                           \
             _STAR_FAIL("ASS_ISNT(%s, %s) failed", #a, #b);                \
+            _star_asserts_failed++;                                       \
+            _star_current_failed = 1;                                     \
+            if (_star_fatal) return;                                      \
+        } else if (_star_verbose) {                                       \
+            _STAR_PASS("ASS_ISNT(%s, %s) passed", #a, #b);                \
+        }                                                                 \
+    } while (0)
+
+#define ASS_ISNTM(a, b, m)                                                \
+    do {                                                                  \
+        _star_asserts_total++;                                            \
+        if (!memcmp(&(a), &(b), sizeof((a)))) {                           \
+            _STAR_FAIL("ASS_ISNT(%s, %s) %s", #a, #b, _STAR_CUSTOM(m));   \
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
             if (_star_fatal) return;                                      \
@@ -252,11 +442,37 @@ static inline int __star_nearly_equal(double a, double b) {
         }                                                                 \
     } while (0)
 
+#define ASS_ISNULLM(expr, m)                                              \
+    do {                                                                  \
+        _star_asserts_total++;                                            \
+        if ((expr) != NULL) {                                             \
+            _STAR_FAIL("ASS_ISNULL(%s) %s", #expr, _STAR_CUSTOM(m));      \
+            _star_asserts_failed++;                                       \
+            _star_current_failed = 1;                                     \
+            if (_star_fatal) return;                                      \
+        } else if (_star_verbose) {                                       \
+            _STAR_PASS("ASS_ISNULL(%s) passed", #expr);                   \
+        }                                                                 \
+    } while (0)
+
 #define ASS_ISNTNULL(expr)                                                \
     do {                                                                  \
         _star_asserts_total++;                                            \
         if ((expr) == NULL) {                                             \
             _STAR_FAIL("ASS_ISNTNULL(%s) failed", #expr);                 \
+            _star_asserts_failed++;                                       \
+            _star_current_failed = 1;                                     \
+            if (_star_fatal) return;                                      \
+        } else if (_star_verbose) {                                       \
+            _STAR_PASS("ASS_ISNTNULL(%s) passed", #expr);                 \
+        }                                                                 \
+    } while (0)
+
+#define ASS_ISNTNULLM(expr, m)                                            \
+    do {                                                                  \
+        _star_asserts_total++;                                            \
+        if ((expr) == NULL) {                                             \
+            _STAR_FAIL("ASS_ISNTNULL(%s) %s", #expr, _STAR_CUSTOM(m));    \
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
             if (_star_fatal) return;                                      \
@@ -345,9 +561,13 @@ int main(int argc, char** argv) {
 #endif /* STAR_TEST_H */
 
 /*
-    Revision history:     
-        0.4.2  (2025-12-23)  `STAR_VERBOSE` also works in addition to `STAR_VERBOSE_ASSERTS`. Using epsilon
-                              -based floating point comparison.
+    Revision history:   
+        0.5.0  (2025-11-24)  Changes:
+                                - 0.4.1: `STAR_VERBOSE` also works in addition to `STAR_VERBOSE_ASSERTS`.
+                                - 0.4.2: Now using epsilon-based floating point comparison.
+                                - 0.4.3: Bold coloring for color-enabled output on assert outcome (FAIL, PASS).
+                                - 0.5.0: Support for custom messages on failed assertions. Custom messages have
+                                         high intensity cyan color.
         0.4.0  (2025-11-23)  Many changes:
                                 - 0.3.2: automatic file-line display in _STAR_FAIL + top-file description.
                                 - 0.3.1: global test count is now size_t, user-irrelevant identifiers
