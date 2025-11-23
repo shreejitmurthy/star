@@ -60,9 +60,8 @@ TEST(test_strings) {
 // Then use star_run(bool extra_output) to run all tests.
 ```
 **Colored Output:**
-<!-- ![Epic Output](scs/example.png) -->
 <p align="center">
-    <img src="scs/example1.png" width="800">
+    <img src="scs/example2.png" width="800">
 </p>
 
 Only 8 asserts are recognised because of fatal assertions that abort the rest of the function and subsequently don't reach the next assert (in `test_strings` and `test_addition`).
