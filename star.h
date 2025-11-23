@@ -103,7 +103,6 @@ static const int _star_verbose = 0;
     }                                                                     \
     void name()
 
-/* ASSERTS */
 static inline int __star_nearly_equal(double a, double b) {
     if (a == b) return 1;
     double diff = fabs(a - b);
@@ -113,6 +112,12 @@ static inline int __star_nearly_equal(double a, double b) {
     return diff < scale;
 }
 
+static inline void __star_increment_failed() {
+    _star_asserts_failed++;
+    _star_current_failed = 1;
+}
+    
+/* ASSERTS */
 static inline bool __assert_eq(double a, double b, bool negate) {
     _star_asserts_total++;
 
@@ -120,8 +125,7 @@ static inline bool __assert_eq(double a, double b, bool negate) {
     bool ok = negate ? !equal : equal;
 
     if (!ok) {
-        _star_asserts_failed++;
-        _star_current_failed = 1;
+        __star_increment_failed();
     }
 
     return ok;
@@ -134,8 +138,7 @@ static inline bool __assert_streq(char* a, char* b, bool negate) {
     bool ok = negate ? !equal : equal;
 
     if (!ok) {
-        _star_asserts_failed++;
-        _star_current_failed = 1;
+        __star_increment_failed();
     }
 
     return ok;
@@ -146,8 +149,7 @@ static inline bool __assert_kindaeq(double a, double b, double n, bool negate) {
     bool ok = negate ? !equal : equal;
 
     if (!ok) {
-        _star_asserts_failed++;
-        _star_current_failed = 1;
+       __star_increment_failed();
     }
 
     return ok;
@@ -329,8 +331,7 @@ static inline bool __assert_kindaeq(double a, double b, double n, bool negate) {
         _star_asserts_total++;                                            \
         if (!(expr)) {                                                    \
             _STAR_FAIL("ASS_TRUE(%s) failed", #expr);                     \
-            _star_asserts_failed++;                                       \
-            _star_current_failed = 1;                                     \
+            __star_increment_failed();                                    \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
             _STAR_PASS("ASS_TRUE(%s) passed", #expr);                     \
@@ -342,8 +343,7 @@ static inline bool __assert_kindaeq(double a, double b, double n, bool negate) {
         _star_asserts_total++;                                            \
         if (!(expr)) {                                                    \
             _STAR_FAIL("ASS_TRUE(%s) %s", #expr, _STAR_CUSTOM(m));        \
-            _star_asserts_failed++;                                       \
-            _star_current_failed = 1;                                     \
+            __star_increment_failed();                                    \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
             _STAR_PASS("ASS_TRUE(%s) passed", #expr);                     \
@@ -355,8 +355,7 @@ static inline bool __assert_kindaeq(double a, double b, double n, bool negate) {
         _star_asserts_total++;                                            \
         if ((expr)) {                                                     \
             _STAR_FAIL("ASS_FALSE(%s) failed", #expr);                    \
-            _star_asserts_failed++;                                       \
-            _star_current_failed = 1;                                     \
+            __star_increment_failed();                                    \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
             _STAR_PASS("ASS_FALSE(%s) passed", #expr);                    \
@@ -368,8 +367,7 @@ static inline bool __assert_kindaeq(double a, double b, double n, bool negate) {
         _star_asserts_total++;                                            \
         if ((expr)) {                                                     \
             _STAR_FAIL("ASS_FALSE(%s) %s", #expr, _STAR_CUSTOM(m));       \
-            _star_asserts_failed++;                                       \
-            _star_current_failed = 1;                                     \
+            __star_increment_failed();                                    \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
             _STAR_PASS("ASS_FALSE(%s) passed", #expr);                    \
@@ -381,8 +379,7 @@ static inline bool __assert_kindaeq(double a, double b, double n, bool negate) {
         _star_asserts_total++;                                            \
         if (memcmp(&(a), &(b), sizeof((a)))) {                            \
             _STAR_FAIL("ASS_IS(%s, %s) failed", #a, #b);                  \
-            _star_asserts_failed++;                                       \
-            _star_current_failed = 1;                                     \
+            __star_increment_failed();                                    \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
             _STAR_PASS("ASS_IS(%s, %s) passed", #a, #b);                  \
@@ -394,8 +391,7 @@ static inline bool __assert_kindaeq(double a, double b, double n, bool negate) {
         _star_asserts_total++;                                            \
         if (memcmp(&(a), &(b), sizeof((a)))) {                            \
             _STAR_FAIL("ASS_IS(%s, %s) %s", #a, #b, _STAR_CUSTOM(m));     \
-            _star_asserts_failed++;                                       \
-            _star_current_failed = 1;                                     \
+            __star_increment_failed();                                    \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
             _STAR_PASS("ASS_IS(%s, %s) passed", #a, #b);                  \
@@ -407,8 +403,7 @@ static inline bool __assert_kindaeq(double a, double b, double n, bool negate) {
         _star_asserts_total++;                                            \
         if (!memcmp(&(a), &(b), sizeof((a)))) {                           \
             _STAR_FAIL("ASS_ISNT(%s, %s) failed", #a, #b);                \
-            _star_asserts_failed++;                                       \
-            _star_current_failed = 1;                                     \
+            __star_increment_failed();                                    \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
             _STAR_PASS("ASS_ISNT(%s, %s) passed", #a, #b);                \
@@ -420,8 +415,7 @@ static inline bool __assert_kindaeq(double a, double b, double n, bool negate) {
         _star_asserts_total++;                                            \
         if (!memcmp(&(a), &(b), sizeof((a)))) {                           \
             _STAR_FAIL("ASS_ISNT(%s, %s) %s", #a, #b, _STAR_CUSTOM(m));   \
-            _star_asserts_failed++;                                       \
-            _star_current_failed = 1;                                     \
+            __star_increment_failed();                                    \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
             _STAR_PASS("ASS_ISNT(%s, %s) passed", #a, #b);                \
@@ -434,8 +428,7 @@ static inline bool __assert_kindaeq(double a, double b, double n, bool negate) {
         _star_asserts_total++;                                            \
         if ((expr) != NULL) {                                             \
             _STAR_FAIL("ASS_ISNULL(%s) failed", #expr);                   \
-            _star_asserts_failed++;                                       \
-            _star_current_failed = 1;                                     \
+            __star_increment_failed();                                    \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
             _STAR_PASS("ASS_ISNULL(%s) passed", #expr);                   \
@@ -447,8 +440,7 @@ static inline bool __assert_kindaeq(double a, double b, double n, bool negate) {
         _star_asserts_total++;                                            \
         if ((expr) != NULL) {                                             \
             _STAR_FAIL("ASS_ISNULL(%s) %s", #expr, _STAR_CUSTOM(m));      \
-            _star_asserts_failed++;                                       \
-            _star_current_failed = 1;                                     \
+            __star_increment_failed();                                    \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
             _STAR_PASS("ASS_ISNULL(%s) passed", #expr);                   \
@@ -460,8 +452,7 @@ static inline bool __assert_kindaeq(double a, double b, double n, bool negate) {
         _star_asserts_total++;                                            \
         if ((expr) == NULL) {                                             \
             _STAR_FAIL("ASS_ISNTNULL(%s) failed", #expr);                 \
-            _star_asserts_failed++;                                       \
-            _star_current_failed = 1;                                     \
+            __star_increment_failed();                                    \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
             _STAR_PASS("ASS_ISNTNULL(%s) passed", #expr);                 \
@@ -473,12 +464,130 @@ static inline bool __assert_kindaeq(double a, double b, double n, bool negate) {
         _star_asserts_total++;                                            \
         if ((expr) == NULL) {                                             \
             _STAR_FAIL("ASS_ISNTNULL(%s) %s", #expr, _STAR_CUSTOM(m));    \
-            _star_asserts_failed++;                                       \
-            _star_current_failed = 1;                                     \
+            __star_increment_failed();                                    \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
             _STAR_PASS("ASS_ISNTNULL(%s) passed", #expr);                 \
         }                                                                 \
+    } while (0)
+
+// Comparisons
+#define ASS_GREATER(a, b)                                                 \
+    do {                                                                  \
+        _star_asserts_total++;                                            \
+        if ((a) <= (b)) {                                                 \
+            _STAR_FAIL("ASS_GREATER(%s, %s) failed: %lf <= %lf",          \
+                #a, #b, (double)(a), (double)(b));                        \
+            __star_increment_failed();                                    \
+            if (_star_fatal) return;                                      \
+        } else if (_star_verbose) {                                       \
+            _STAR_PASS("ASS_GREATER(%s, %s) passed: %lf > %lf",           \
+                #a, #b, (double)(a), (double)(b));                        \
+        }                                                                 \
+    } while (0)
+
+#define ASS_GREATERM(a, b, m)                                             \
+    do {                                                                  \
+        _star_asserts_total++;                                            \
+        if ((a) <= (b)) {                                                 \
+            _STAR_FAIL("ASS_GREATERM(%s, %s) %s",                         \
+                #a, #b, _STAR_CUSTOM(m));                                 \
+            __star_increment_failed();                                    \
+            if (_star_fatal) return;                                      \
+        } else if (_star_verbose) {                                       \
+            _STAR_PASS("ASS_GREATERM(%s, %s) passed: %lf > %lf",          \
+                #a, #b, (double)(a), (double)(b));                        \
+        }                                                                 \
+    } while (0)
+
+#define ASS_GREATEREQ(a, b)                                               \
+    do {                                                                  \
+        _star_asserts_total++;                                            \
+        if ((a) < (b)) {                                                  \
+            _STAR_FAIL("ASS_GREATEREQ(%s, %s) failed: %lf < %lf",         \
+                #a, #b, (double)(a), (double)(b));                        \
+            __star_increment_failed();                                    \
+            if (_star_fatal) return;                                      \
+        } else if (_star_verbose) {                                       \
+            _STAR_PASS("ASS_GREATEREQ(%s, %s) passed: %lf >= %lf",        \
+                #a, #b, (double)(a), (double)(b));                        \
+        }                                                                 \
+    } while (0)
+
+#define ASS_GREATERQM(a, b, m)                                            \
+    do {                                                                  \
+        _star_asserts_total++;                                            \
+        if ((a) < (b)) {                                                  \
+            _STAR_FAIL("ASS_GREATEREQM(%s, %s) %s",                       \
+                #a, #b, _STAR_CUSTOM(m));                                 \
+            __star_increment_failed();                                    \
+            if (_star_fatal) return;                                      \
+        } else if (_star_verbose) {                                       \
+            _STAR_PASS("ASS_GREATEREQM(%s, %s) passed: %lf >= %lf",        \
+                #a, #b, (double)(a), (double)(b));                        \
+        }                                                                 \
+    } while (0)
+
+#define ASS_LESSER(a, b)                                                  \
+    do {                                                                  \
+        _star_asserts_total++;                                            \
+        if ((a) >= (b)) {                                                 \
+            _STAR_FAIL("ASS_LESSER(%s, %s) failed: %lf >= %lf",           \
+                #a, #b, (double)(a), (double)(b));                        \
+            __star_increment_failed();                                    \
+            if (_star_fatal) return;                                      \
+        } else if (_star_verbose) {                                       \
+            _STAR_PASS("ASS_LESSER(%s, %s) passed: %lf < %lf",            \
+                #a, #b, (double)(a), (double)(b));                        \
+        }                                                                 \
+    } while (0)
+
+#define ASS_LESSERM(a, b, m)                                              \
+    do {                                                                  \
+        _star_asserts_total++;                                            \
+        if ((a) >= (b)) {                                                 \
+            _STAR_FAIL("ASS_LESSERM(%s, %s) %s",                          \
+                #a, #b, _STAR_CUSTOM(m));                                 \
+            __star_increment_failed();                                    \
+            if (_star_fatal) return;                                      \
+        } else if (_star_verbose) {                                       \
+            _STAR_PASS("ASS_LESSERM(%s, %s) passed: %lf < %lf %s",        \
+                #a, #b, (double)(a), (double)(b), _STAR_CUSTOM(m));       \
+        }                                                                 \
+    } while (0)
+
+#define ASS_LESSEREQ(a, b)                                                \
+    do {                                                                  \
+        _star_asserts_total++;                                            \
+        if ((a) > (b)) {                                                  \
+            _STAR_FAIL("ASS_LESSEREQ(%s, %s) failed: %lf > %lf",          \
+                #a, #b, (double)(a), (double)(b));                        \
+            __star_increment_failed();                                    \
+            if (_star_fatal) return;                                      \
+        } else if (_star_verbose) {                                       \
+            _STAR_PASS("ASS_LESSEREQ(%s, %s) passed: %lf <= %lf",         \
+                #a, #b, (double)(a), (double)(b));                        \
+        }                                                                 \
+    } while (0)
+
+#define ASS_LESSERQM(a, b, m)                                             \
+    do {                                                                  \
+        _star_asserts_total++;                                            \
+        if ((a) > (b)) {                                                  \
+            _STAR_FAIL("ASS_LESSEREQM(%s, %s) %s",                        \
+                #a, #b, _STAR_CUSTOM(m));                                 \
+            __star_increment_failed();                                    \
+            if (_star_fatal) return;                                      \
+        } else if (_star_verbose) {                                       \
+            _STAR_PASS("ASS_LESSEREQM(%s, %s) passed: %lf < %lf",         \
+                #a, #b, (double)(a), (double)(b));                        \
+        }                                                                 \
+    } while (0)
+
+// Forced fail
+#define DIE()                \
+    do {                     \
+        _STAR_FAIL("DIE()"); \
     } while (0)
 
 /* Run Functionality */
@@ -569,6 +678,7 @@ int main(int argc, char** argv) {
                                 - 0.4.3: Bold coloring for color-enabled output on assert outcome (FAIL, PASS).
                                 - 0.5.0: Support for custom messages on failed assertions. Custom messages have
                                          high intensity cyan color.
+                                         (squeeze) Also added comparison assertions and forced failure.
         0.4.0  (2025-11-23)  Many changes:
                                 - 0.3.2: automatic file-line display in _STAR_FAIL + top-file description.
                                 - 0.3.1: global test count is now size_t, user-irrelevant identifiers
