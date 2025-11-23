@@ -6,7 +6,8 @@
             #define STAR_NO_ENTRY
             #include "star.h"
         Define `STAR_NO_COLOR` to disable ASCII coloring:
-        Define `STAR_NON_FATAL` so failed assertions mark a test as failed, but don't abort the test entirely.
+        Define `STAR_NON_FATAL` so failed assertions don't abort the test entirely.
+        Define `STAR_VERBOSE_ASSERTS` for per-assert pass output.
         
         See the README.md for all features.
 
@@ -45,6 +46,12 @@ static size_t _star_asserts_failed = 0;
 static const int _star_fatal = 0;
 #else
 static const int _star_fatal = 1;
+#endif
+
+#ifdef STAR_VERBOSE_ASSERTS
+static const int _star_verbose = 1;
+#else
+static const int _star_verbose = 0;
 #endif
 
 
@@ -87,10 +94,13 @@ static const int _star_fatal = 1;
         _star_asserts_total++;                                            \
         if ((a) != (b)) {                                                 \
             _STAR_FAIL("ASS_EQ(%s, %s) failed: %lf != %lf\n",             \
-                #a, #b, (double)(a), (double)(b));                        \
+                       #a, #b, (double)(a), (double)(b));                 \
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
             if (_star_fatal) return;                                      \
+        } else if (_star_verbose) {                                       \
+            _STAR_PASS("ASS_EQ(%s, %s) passed: %lf == %lf\n",             \
+                       #a, #b, (double)(a), (double)(b));                 \
         }                                                                 \
     } while (0)
 
@@ -99,10 +109,13 @@ static const int _star_fatal = 1;
         _star_asserts_total++;                                            \
         if ((a) == (b)) {                                                 \
             _STAR_FAIL("ASS_NEQ(%s, %s) failed: %lf == %lf\n",            \
-                #a, #b, (double)(a), (double)(b));                        \
+                       #a, #b, (double)(a), (double)(b));                 \
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
             if (_star_fatal) return;                                      \
+        } else if (_star_verbose) {                                       \
+            _STAR_PASS("ASS_NEQ(%s, %s) passed: %lf != %lf\n",            \
+                       #a, #b, (double)(a), (double)(b));                 \
         }                                                                 \
     } while (0)
 
@@ -118,10 +131,13 @@ static const int _star_fatal = 1;
         }                                                                 \
         if (!(fabs((a) - (b)) <= n)) {                                    \
             _STAR_FAIL("ASS_KINDAEQ(%s, %s) failed: %lf !≈ %lf (degree %lf)\n", \
-                #a, #b, (double)(a), (double)(b), n);                     \
+                       #a, #b, (double)(a), (double)(b), n);              \
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
             if (_star_fatal) return;                                      \
+        } else if (_star_verbose) {                                       \
+            _STAR_PASS("ASS_KINDAEQ(%s, %s) passed: %lf ≈ %lf (degree %lf)\n", \
+                       #a, #b, (double)(a), (double)(b), n);              \
         }                                                                 \
     } while (0)
 
@@ -135,10 +151,13 @@ static const int _star_fatal = 1;
         }                                                                 \
         if ((fabs((a) - (b)) <= n)) {                                     \
             _STAR_FAIL("ASS_KINDAEQ(%s, %s) failed: %lf ≈ %lf (degree %lf)\n", \
-                #a, #b, (double)(a), (double)(b), n);                     \
+                       #a, #b, (double)(a), (double)(b), n);              \
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
             if (_star_fatal) return;                                      \
+        } else if (_star_verbose) {                                       \
+            _STAR_PASS("ASS_KINDAEQ(%s, %s) passed: %lf !≈ %lf (degree %lf)\n", \
+                       #a, #b, (double)(a), (double)(b), n);              \
         }                                                                 \
     } while (0)
 
@@ -150,6 +169,8 @@ static const int _star_fatal = 1;
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
             if (_star_fatal) return;                                      \
+        } else if (_star_verbose) {                                       \
+            _STAR_PASS("ASS_TRUE(%s) passed\n", #expr);                   \
         }                                                                 \
     } while (0)
 
@@ -161,6 +182,8 @@ static const int _star_fatal = 1;
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
             if (_star_fatal) return;                                      \
+        } else if (_star_verbose) {                                       \
+            _STAR_PASS("ASS_FALSE(%s) passed\n", #expr);                  \
         }                                                                 \
     } while (0)
 
@@ -172,6 +195,8 @@ static const int _star_fatal = 1;
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
             if (_star_fatal) return;                                      \
+        } else if (_star_verbose) {                                       \
+            _STAR_PASS("ASS_IS(%s, %s) passed\n", #a, #b);                \
         }                                                                 \
     } while (0)
 
@@ -183,11 +208,12 @@ static const int _star_fatal = 1;
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
             if (_star_fatal) return;                                      \
+        } else if (_star_verbose) {                                       \
+            _STAR_PASS("ASS_ISNT(%s, %s) passed\n", #a, #b);              \
         }                                                                 \
     } while (0)
 
 // Null / None / Undefined
-
 #define ASS_ISNULL(expr)                                                  \
     do {                                                                  \
         _star_asserts_total++;                                            \
@@ -196,6 +222,8 @@ static const int _star_fatal = 1;
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
             if (_star_fatal) return;                                      \
+        } else if (_star_verbose) {                                       \
+            _STAR_PASS("ASS_ISNULL(%s) passed\n", #expr);                 \
         }                                                                 \
     } while (0)
 
@@ -207,6 +235,8 @@ static const int _star_fatal = 1;
             _star_asserts_failed++;                                       \
             _star_current_failed = 1;                                     \
             if (_star_fatal) return;                                      \
+        } else if (_star_verbose) {                                       \
+            _STAR_PASS("ASS_ISNTNULL(%s) passed\n", #expr);               \
         }                                                                 \
     } while (0)
 
