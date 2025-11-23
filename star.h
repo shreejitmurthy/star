@@ -5,15 +5,19 @@
 #include <stdlib.h>
 #include <math.h>
 
-typedef void (*test_func)();
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef void (*star_test_func)();
 
 typedef struct {
     const char *name;
-    test_func func;
-} test_case;
+    star_test_func func;
+} _star_test_case;
 
-static test_case tests[256];
-static int test_count = 0;
+static _star_test_case _star_tests[256];
+static size_t _star_test_count = 0;
 
 #if !defined(STAR_NO_COLOR)
 #define _STAR_FAIL(format, ...)    printf("\033[31m[FAIL]\033[0m " format, ##__VA_ARGS__)
@@ -26,12 +30,12 @@ static int test_count = 0;
 #endif /* STAR_NO_COLOR */
 
 // Test "Constructor"
-#define TEST(name)                                      \
-    void name();                                        \
-    __attribute__((constructor))                        \
-    void register_##name() {                            \
-        tests[test_count++] = (test_case){#name, name}; \
-    }                                                   \
+#define TEST(name)                                                        \
+    void name();                                                          \
+    __attribute__((constructor))                                          \
+    void register_##name() {                                              \
+        _star_tests[_star_test_count++] = (_star_test_case){#name, name}; \
+    }                                                                     \
     void name()
 
 
@@ -91,7 +95,7 @@ static int test_count = 0;
         return;                                                           \
     }
 
-#define ASS_TRUE(expr)                                                    \
+#define ASS_FALSE(expr)                                                   \
     if ((expr)) {                                                         \
         _STAR_FAIL("%s:%d: ASS_FALSE(%s) failed\n",                       \
             __FILE__, __LINE__, #expr);                                   \
@@ -101,41 +105,46 @@ static int test_count = 0;
 /* Run Functionality */
 #if defined(STAR_NO_ENTRY)
 static inline void star_run(int o) {
-    if (o) printf("Running %d tests...\n", test_count);
+    if (o) printf("Running %zu tests...\n", _star_test_count);
 
     int passed = 0;
-    for (int i = 0; i < test_count; i++) {
+    for (int i = 0; i < _star_test_count; i++) {
         tests[i].func();
         if (o) _STAR_PASS("%s\n", tests[i].name);
         passed++;
     }
 
-    if (o) _STAR_SUMMARY("%d/%d tests passed\n", passed, test_count);
+    if (o) _STAR_SUMMARY("%d/%zu tests passed\n", passed, _star_test_count);
 }
 #else
 int main(int argc, char** argv) {
-    printf("Running %d tests...\n", test_count);
+    printf("Running %zu tests...\n", _star_test_count);
 
     int passed = 0;
-    for (int i = 0; i < test_count; i++) {
-        tests[i].func();
-        _STAR_PASS("%s\n", tests[i].name);
+    for (int i = 0; i < _star_test_count; i++) {
+        _star_tests[i].func();
+        _STAR_PASS("%s\n", _star_tests[i].name);
         passed++;
     }
 
-    _STAR_SUMMARY("%d/%d tests passed\n", passed, test_count);
+    _STAR_SUMMARY("%d/%zu tests passed\n", passed, _star_test_count);
 
     return 0;
 }
 #endif /* STAR_NO_ENTRY */
 
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
 #endif /* STAR_TEST_H */
 
 /*
-    Revision history:        
+    Revision history:       
+        0.3.1  (2025-11-23)  Minor changes: global test count is now size_t, user-irrelevant identifiers
+                             now prefixed with `_star`.
         0.3.0  (2025-11-22)  Added more equality + bool asserts.                      
-        0.2.0  (2025-11-22)  Created test running and two asserts.
-                             `main()` hijacking toggleable and
+        0.2.0  (2025-11-22)  Created test running and two asserts. `main()` hijacking toggleable and
                              ASCII coloring also added.
         0.1.0  (2025-11-22)  First push.
 */
