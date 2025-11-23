@@ -53,7 +53,10 @@ TEST(test_nulls) {
 // Then use star_run(bool extra_output) to run all tests.
 ```
 **Colored Output:**
-![Epic Output](scs/example.png)
+<!-- ![Epic Output](scs/example.png) -->
+<p align="center">
+    <img src="scs/example.png" width="464">
+</p>
 
 ### Macros
 All the assertions are function-like macros, but there are a few others that, if you choose, should be defined before `#include`-ing the header:
