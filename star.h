@@ -5,9 +5,7 @@
         Define `STAR_NO_ENTRY` in *one* source file before including this header to disable `main()` hijacking:
             #define STAR_NO_ENTRY
             #include "star.h"
-        Define `STAR_NO_COLOR` in *one* source file before including this header to disable ASCII coloring:
-            #define STAR_NO_COLOR
-            #include "star.h"
+        Define `STAR_NO_COLOR` to disable ASCII coloring:
         
         See the README.md for all features.
 
@@ -35,8 +33,13 @@ typedef struct {
     star_test_func func;
 } _star_test_case;
 
-static _star_test_case _star_tests[256];
+static int _star_current_failed = 0;
 static size_t _star_test_count = 0;
+static _star_test_case _star_tests[256];
+
+static size_t _star_asserts_total  = 0;
+static size_t _star_asserts_failed = 0;
+
 
 #if !defined(STAR_NO_COLOR)
 #define _STAR_FAIL(format, ...)                          \
@@ -69,94 +72,204 @@ static size_t _star_test_count = 0;
     }                                                                     \
     void name()
 
-
 /* ASSERTS */
 
 // Equality & Inequality
 #define ASS_EQ(a, b)                                                      \
-    if ((a) != (b)) {                                                     \
-        _STAR_FAIL("ASS_EQ(%s, %s) failed: %lf != %lf\n",                 \
-            #a, #b, (a), (b));                                            \
-        return;                                                           \
-    }
-
+    do {                                                                  \
+        _star_asserts_total++;                                            \
+        if ((a) != (b)) {                                                 \
+            _STAR_FAIL("ASS_EQ(%s, %s) failed: %lf != %lf\n",             \
+                #a, #b, (double)(a), (double)(b));                        \
+            _star_asserts_failed++;                                       \
+            _star_current_failed = 1;                                     \
+            return;                                                       \
+        }                                                                 \
+    } while (0)
 
 #define ASS_NEQ(a, b)                                                     \
-    if ((a) == (b)) {                                                     \
-        _STAR_FAIL("ASS_NEQ(%s, %s) failed: %lf == %lf\n",                \
-            #a, #b, (a), (b));                                            \
-        return;                                                           \
-    }
+    do {                                                                  \
+        _star_asserts_total++;                                            \
+        if ((a) == (b)) {                                                 \
+            _STAR_FAIL("ASS_NEQ(%s, %s) failed: %lf == %lf\n",            \
+                #a, #b, (double)(a), (double)(b));                        \
+            _star_asserts_failed++;                                       \
+            _star_current_failed = 1;                                     \
+            return;                                                       \
+        }                                                                 \
+    } while (0)
+
 
 // Look at this song and dance I have to do... (easily preventable if I wasn't stubborn)
-#define ASS_KINDAEQ(a, b, dptr)                                                        \
-    do {                                                                               \
-        double n = 6.9;                                                                \
-        if ((dptr) != NULL) {                                                          \
-            const double *tmp__ = (const double *)(dptr);                              \
-            n = *tmp__;                                                                \
-        }                                                                              \
-        if (!(fabs((a) - (b)) <= n)) {                                                 \
-            _STAR_FAIL("ASS_KINDAEQ(%s, %s) failed: %lf !≈ %lf (degree %lf)\n",        \
-                      #a, #b, (a), (b), n);                                            \
-            return;                                                                    \
-        }                                                                              \
+#define ASS_KINDAEQ(a, b, dptr)                                           \
+    do {                                                                  \
+        _star_asserts_total++;                                            \
+        double n = 6.9;                                                   \
+        if ((dptr) != NULL) {                                             \
+            const double *tmp__ = (const double *)(dptr);                 \
+            n = *tmp__;                                                   \
+        }                                                                 \
+        if (!(fabs((a) - (b)) <= n)) {                                    \
+            _STAR_FAIL("ASS_KINDAEQ(%s, %s) failed: %lf !≈ %lf (degree %lf)\n", \
+                #a, #b, (double)(a), (double)(b), n);                     \
+            _star_asserts_failed++;                                       \
+            _star_current_failed = 1;                                     \
+            return;                                                       \
+        }                                                                 \
     } while (0)
 
-
-#define ASS_KINDANEQ(a, b, dptr)                                                      \
-    do {                                                                              \
-        double n = 6.9;                                                               \
-        if ((dptr) != NULL) {                                                         \
-            const double *tmp__ = (const double *)(dptr);                             \
-            n = *tmp__;                                                               \
-        }                                                                             \
-        if ((fabs((a) - (b)) <= n)) {                                                 \
-            _STAR_FAIL("ASS_KINDAEQ(%s, %s) failed: %lf ≈ %lf (degree %lf)\n",        \
-                      #a, #b, (a), (b), n);                                           \
-            return;                                                                   \
-        }                                                                             \
+#define ASS_KINDANEQ(a, b, dptr)                                          \
+    do {                                                                  \
+        _star_asserts_total++;                                            \
+        double n = 6.9;                                                   \
+        if ((dptr) != NULL) {                                             \
+            const double *tmp__ = (const double *)(dptr);                 \
+            n = *tmp__;                                                   \
+        }                                                                 \
+        if ((fabs((a) - (b)) <= n)) {                                     \
+            _STAR_FAIL("ASS_KINDAEQ(%s, %s) failed: %lf ≈ %lf (degree %lf)\n", \
+                #a, #b, (double)(a), (double)(b), n);                     \
+            _star_asserts_failed++;                                       \
+            _star_current_failed = 1;                                     \
+            return;                                                       \
+        }                                                                 \
     } while (0)
 
-// Boolean / Truthiness
 #define ASS_TRUE(expr)                                                    \
-    if (!(expr)) {                                                        \
-        _STAR_FAIL("ASS_TRUE(%s) failed\n", #expr);                       \
-        return;                                                           \
-    }
+    do {                                                                  \
+        _star_asserts_total++;                                            \
+        if (!(expr)) {                                                    \
+            _STAR_FAIL("ASS_TRUE(%s) failed\n", #expr);                   \
+            _star_asserts_failed++;                                       \
+            _star_current_failed = 1;                                     \
+            return;                                                       \
+        }                                                                 \
+    } while (0)
 
 #define ASS_FALSE(expr)                                                   \
-    if ((expr)) {                                                         \
-        _STAR_FAIL("ASS_FALSE(%s) failed\n", #expr);                      \
-        return;                                                           \
-    }
+    do {                                                                  \
+        _star_asserts_total++;                                            \
+        if ((expr)) {                                                     \
+            _STAR_FAIL("ASS_FALSE(%s) failed\n", #expr);                  \
+            _star_asserts_failed++;                                       \
+            _star_current_failed = 1;                                     \
+            return;                                                       \
+        }                                                                 \
+    } while (0)
+
+#define ASS_IS(a, b)                                                      \
+    do {                                                                  \
+        _star_asserts_total++;                                            \
+        if (memcmp(&(a), &(b), sizeof((a)))) {                            \
+            _STAR_FAIL("ASS_IS(%s, %s) failed\n", #a, #b);                \
+            _star_asserts_failed++;                                       \
+            _star_current_failed = 1;                                     \
+            return;                                                       \
+        }                                                                 \
+    } while (0)
+
+#define ASS_ISNT(a, b)                                                    \
+    do {                                                                  \
+        _star_asserts_total++;                                            \
+        if (!memcmp(&(a), &(b), sizeof((a)))) {                           \
+            _STAR_FAIL("ASS_ISNT(%s, %s) failed\n", #a, #b);              \
+            _star_asserts_failed++;                                       \
+            _star_current_failed = 1;                                     \
+            return;                                                       \
+        }                                                                 \
+    } while (0)
+
+// Null / None / Undefined
+
+#define ASS_ISNULL(expr)                                                  \
+    do {                                                                  \
+        _star_asserts_total++;                                            \
+        if ((expr) != NULL) {                                             \
+            _STAR_FAIL("ASS_ISNULL(%s) failed\n", #expr);                 \
+            _star_asserts_failed++;                                       \
+            _star_current_failed = 1;                                     \
+            return;                                                       \
+        }                                                                 \
+    } while (0)
+
+#define ASS_ISNTNULL(expr)                                                \
+    do {                                                                  \
+        _star_asserts_total++;                                            \
+        if ((expr) == NULL) {                                             \
+            _STAR_FAIL("ASS_ISNTNULL(%s) failed\n", #expr);               \
+            _star_asserts_failed++;                                       \
+            _star_current_failed = 1;                                     \
+            return;                                                       \
+        }                                                                 \
+    } while (0)
 
 /* Run Functionality */
 #if defined(STAR_NO_ENTRY)
-static inline void star_run(int o) {
+static inline int star_run(int o) {
     if (o) printf("Running %zu tests...\n", _star_test_count);
 
-    int passed = 0;
-    for (int i = 0; i < _star_test_count; i++) {
-        tests[i].func();
-        if (o) _STAR_PASS("%s\n", tests[i].name);
-        passed++;
+    int passed_tests = 0;
+    int failed_tests = 0;
+
+    for (int i = 0; i < (int)_star_test_count; i++) {
+        _star_current_failed = 0;
+
+        size_t before_total  = _star_asserts_total;
+        size_t before_failed = _star_asserts_failed;
+
+        _star_tests[i].func();
+
+        size_t test_total  = _star_asserts_total  - before_total;
+        size_t test_failed = _star_asserts_failed - before_failed;
+        size_t test_passed = test_total - test_failed;
+
+        if (_star_current_failed) {
+            _STAR_FAIL("%s: %zu/%zu assertions passed (%zu failed)\n", _star_tests[i].name, test_passed, test_total, test_failed);
+            failed_tests++;
+        } else {
+            _STAR_PASS("%s: %zu/%zu assertions passed\n", _star_tests[i].name, test_passed, test_total);
+            passed_tests++;
+        }
     }
 
-    if (o) _STAR_SUMMARY("%d/%zu tests passed\n", passed, _star_test_count);
+    size_t total_passed_asserts = _star_asserts_total - _star_asserts_failed;
+
+    if (o) _STAR_SUMMARY("%d/%zu tests passed, %d failed ""(%zu/%zu assertions passed)\n", passed_tests, _star_test_count, failed_tests,total_passed_asserts, _star_asserts_total);
+
+    return failed_tests ? 1 : 0;
 }
 #else
 int main(int argc, char** argv) {
     printf("Running %zu tests...\n", _star_test_count);
 
-    int passed = 0;
-    for (int i = 0; i < _star_test_count; i++) {
+    int passed_tests = 0;
+    int failed_tests = 0;
+
+    for (int i = 0; i < (int)_star_test_count; i++) {
+        _star_current_failed = 0;
+
+        size_t before_total  = _star_asserts_total;
+        size_t before_failed = _star_asserts_failed;
+
         _star_tests[i].func();
-        _STAR_PASS("%s\n", _star_tests[i].name);
-        passed++;
+
+        size_t test_total  = _star_asserts_total  - before_total;
+        size_t test_failed = _star_asserts_failed - before_failed;
+        size_t test_passed = test_total - test_failed;
+
+        if (_star_current_failed) {
+            _STAR_FAIL("%s: %zu/%zu assertions passed (%zu failed)\n", _star_tests[i].name, test_passed, test_total, test_failed);
+            failed_tests++;
+        } else {
+            _STAR_PASS("%s: %zu/%zu assertions passed\n", _star_tests[i].name, test_passed, test_total);
+            passed_tests++;
+        }
     }
 
-    _STAR_SUMMARY("%d/%zu tests passed\n", passed, _star_test_count);
+    size_t total_passed_asserts = _star_asserts_total - _star_asserts_failed;
+
+    _STAR_SUMMARY("%d/%zu tests passed, %d failed " "(%zu/%zu assertions passed)\n", 
+        passed_tests, _star_test_count, failed_tests, total_passed_asserts, _star_asserts_total);
 
     return 0;
 }
