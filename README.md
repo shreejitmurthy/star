@@ -33,3 +33,8 @@ TEST(test_boolean) {
 ```
 **Colored Output:**
 ![Totally Working](scs/example1.png)
+
+### Dev Notes
+- [ ] Object truthiness (struct, array, etc.)
+- [ ] Need to consider epsilon-based floating-point comparison
+- [ ] Parameterized testing
