@@ -76,8 +76,8 @@ All the assertions are function-like macros, but there are a few others that, if
 ### Dev Notes
 - [x] More informative outputs
 - [x] Object truthiness (struct, array, etc.)
+- [x] Epsilon-based floating-point comparison
 - [ ] String comparing.
 - [ ] Custom fail messages
 - [ ] Collections / Sequences
-- [ ] Consider epsilon-based floating-point comparison
 - [ ] Parameterized testing
