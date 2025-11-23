@@ -60,7 +60,7 @@ static const int _star_verbose = 0;
 #if !defined(STAR_NO_COLOR)
 #define _STAR_FAIL(format, ...)                             \
     do {                                                    \
-        fprintf(stderr, "\033[1;31m[FAIL]\033[0m %s:%d: ",  \
+        fprintf(stderr, "\033[1;31m[FAIL]\033[0m \033[2m%s:%d\033[0m: ",  \
                 __FILE__, __LINE__);                        \
         fprintf(stderr, format "\n", ##__VA_ARGS__);        \
     } while (0)
@@ -74,7 +74,7 @@ static const int _star_verbose = 0;
 #define _STAR_PASS(format, ...)         printf("\033[1;32m[PASS]\033[0m " format "\n", ##__VA_ARGS__)
 #define _STAR_TEST_PASS(format, ...)    printf("\033[1;32m[TEST PASSED]\033[0m " format "\n", ##__VA_ARGS__)
 #define _STAR_SUMMARY(format, ...)      printf("\n\033[1mTechnical and Reliable Summary:\033[0m " format "\n", ##__VA_ARGS__)
-#define _STAR_CUSTOM(msg) "\033[96m" msg "\033[0m"
+#define _STAR_CUSTOM(msg) "\033[36m" msg "\033[0m"
 #else
 #define _STAR_FAIL(format, ...)                      \
     do {                                             \
@@ -561,7 +561,8 @@ int main(int argc, char** argv) {
 #endif /* STAR_TEST_H */
 
 /*
-    Revision history:   
+    Revision history:
+        0.5.1  (2025-11-24)  Custom message color is now normal intensity cyan.   
         0.5.0  (2025-11-24)  Changes:
                                 - 0.4.1: `STAR_VERBOSE` also works in addition to `STAR_VERBOSE_ASSERTS`.
                                 - 0.4.2: Now using epsilon-based floating point comparison.
