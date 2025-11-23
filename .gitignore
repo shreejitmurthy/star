@@ -39,3 +39,5 @@
 
 *.c
 main
+*.png
+.vscode/
