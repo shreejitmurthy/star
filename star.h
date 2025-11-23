@@ -1,9 +1,28 @@
+/* star.h - v0.3.2
+   A single-header testing suite.
+
+   USAGE:
+        Define `STAR_NO_ENTRY` in *one* source file before including this header to disable `main()` hijacking:
+            #define STAR_NO_ENTRY
+            #include "star.h"
+        Define `STAR_NO_COLOR` in *one* source file before including this header to disable ASCII coloring:
+            #define STAR_NO_COLOR
+            #include "star.h"
+        
+        See the README.md for all features.
+
+   LICENSE:
+       See end of file for license information.
+       
+*/
+
 #ifndef STAR_TEST_H
 #define STAR_TEST_H
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -20,11 +39,23 @@ static _star_test_case _star_tests[256];
 static size_t _star_test_count = 0;
 
 #if !defined(STAR_NO_COLOR)
-#define _STAR_FAIL(format, ...)    printf("\033[31m[FAIL]\033[0m " format, ##__VA_ARGS__)
+#define _STAR_FAIL(format, ...)                          \
+    do {                                                 \
+        fprintf(stderr, "\033[31m[FAIL]\033[0m %s:%d: ", \
+                __FILE__, __LINE__);                     \
+        fprintf(stderr, format, ##__VA_ARGS__);          \
+    } while (0)
+
 #define _STAR_PASS(format, ...)    printf("\033[32m[PASS]\033[0m " format, ##__VA_ARGS__)
 #define _STAR_SUMMARY(format, ...) printf("\033[1m\nTechnical and Reliable Summary:\033[0m " format, ##__VA_ARGS__)
 #else
-#define _STAR_FAIL(format, ...)    printf("[FAIL] " format, ##__VA_ARGS__)
+#define _STAR_FAIL(format, ...)                          \
+    do {                                                 \
+        fprintf(stderr, "[FAIL] %s:%d: ",                \
+                __FILE__, __LINE__);                     \
+        fprintf(stderr, format, ##__VA_ARGS__);          \
+    } while (0)
+
 #define _STAR_PASS(format, ...)    printf("[PASS] " format, ##__VA_ARGS__)
 #define _STAR_SUMMARY(format, ...) printf("\nTechnical and Reliable Summary: " format, ##__VA_ARGS__)
 #endif /* STAR_NO_COLOR */
@@ -44,16 +75,16 @@ static size_t _star_test_count = 0;
 // Equality & Inequality
 #define ASS_EQ(a, b)                                                      \
     if ((a) != (b)) {                                                     \
-        _STAR_FAIL("%s:%d: ASS_EQ(%s, %s) failed: %lf != %lf\n",          \
-            __FILE__, __LINE__, #a, #b, (a), (b));                        \
+        _STAR_FAIL("ASS_EQ(%s, %s) failed: %lf != %lf\n",                 \
+            #a, #b, (a), (b));                                            \
         return;                                                           \
     }
 
 
 #define ASS_NEQ(a, b)                                                     \
     if ((a) == (b)) {                                                     \
-        _STAR_FAIL("%s:%d: ASS_NEQ(%s, %s) failed: %lf == %lf\n",         \
-            __FILE__, __LINE__, #a, #b, (a), (b));                        \
+        _STAR_FAIL("ASS_NEQ(%s, %s) failed: %lf == %lf\n",                \
+            #a, #b, (a), (b));                                            \
         return;                                                           \
     }
 
@@ -66,8 +97,8 @@ static size_t _star_test_count = 0;
             n = *tmp__;                                                                \
         }                                                                              \
         if (!(fabs((a) - (b)) <= n)) {                                                 \
-            _STAR_FAIL("%s:%d: ASS_KINDAEQ(%s, %s) failed: %lf !≈ %lf (degree %lf)\n", \
-                      __FILE__, __LINE__, #a, #b, (a), (b), n);                        \
+            _STAR_FAIL("ASS_KINDAEQ(%s, %s) failed: %lf !≈ %lf (degree %lf)\n",        \
+                      #a, #b, (a), (b), n);                                            \
             return;                                                                    \
         }                                                                              \
     } while (0)
@@ -81,8 +112,8 @@ static size_t _star_test_count = 0;
             n = *tmp__;                                                               \
         }                                                                             \
         if ((fabs((a) - (b)) <= n)) {                                                 \
-            _STAR_FAIL("%s:%d: ASS_KINDAEQ(%s, %s) failed: %lf ≈ %lf (degree %lf)\n", \
-                      __FILE__, __LINE__, #a, #b, (a), (b), n);                       \
+            _STAR_FAIL("ASS_KINDAEQ(%s, %s) failed: %lf ≈ %lf (degree %lf)\n",        \
+                      #a, #b, (a), (b), n);                                           \
             return;                                                                   \
         }                                                                             \
     } while (0)
@@ -90,15 +121,13 @@ static size_t _star_test_count = 0;
 // Boolean / Truthiness
 #define ASS_TRUE(expr)                                                    \
     if (!(expr)) {                                                        \
-        _STAR_FAIL("%s:%d: ASS_TRUE(%s) failed\n",                        \
-            __FILE__, __LINE__, #expr);                                   \
+        _STAR_FAIL("ASS_TRUE(%s) failed\n", #expr);                       \
         return;                                                           \
     }
 
 #define ASS_FALSE(expr)                                                   \
     if ((expr)) {                                                         \
-        _STAR_FAIL("%s:%d: ASS_FALSE(%s) failed\n",                       \
-            __FILE__, __LINE__, #expr);                                   \
+        _STAR_FAIL("ASS_FALSE(%s) failed\n", #expr);                      \
         return;                                                           \
     }
 
@@ -140,7 +169,8 @@ int main(int argc, char** argv) {
 #endif /* STAR_TEST_H */
 
 /*
-    Revision history:       
+    Revision history:     
+        0.3.2  (2025-11-23)  Minor changes: automatic file-line display in _STAR_FAIL + top-file description.
         0.3.1  (2025-11-23)  Minor changes: global test count is now size_t, user-irrelevant identifiers
                              now prefixed with `_star`.
         0.3.0  (2025-11-22)  Added more equality + bool asserts.                      
