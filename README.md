@@ -13,14 +13,20 @@ Currently, 256 tests can be written.
 
 #### Boolean / Truthiness
 - `ASS_TRUE(int cond)` / `ASS_FALSE(int cond)`
-- `ASS_IS(expr)` / `ASS_ISNT(expr)` (Objects - structs, arrays, etc.)
+- `ASS_IS(a, b)` / `ASS_ISNT(a, b)` (Objects - structs, arrays, etc. by memory comparison)
 - `ASS_ISNULL(expr)` / `ASS_ISNTNULL` (Null checker)
 
 #### Comparisons
 - `ASS_GREATER(a, b)`, `ASS_GREATEREQ(a, b)` / `ASS_LESSER(a, b)`, `ASS_LESSEREQ(a, b)` (>/=, </=)
 
+#### Collections / Sequences
+- `ASS_IN(item, container)` / `ASS_NOTIN(item, container)` (Check item exists in array. $O(n)$ Linear search)
+- `ASS_INBIN(item, container)` / `ASS_NOTINBIN(item, container)` ($O(\log n)$ Binary search - faster for sorted arrays by ~20-30 milliseconds)
+
 #### Other
 - `DIE()` (forced fail)
+
+The collection asserts provide suppport for stable string checks.
 
 There is also support for custom messages by adding an `M` at the end of the function name: `ASS_EQM, ASS_KINDANEQM, ...`. An example of this is below.
 
@@ -87,19 +93,16 @@ All the assertions are function-like macros, but there are a few others that, if
 - `STAR_VERBOSE` (or `STAR_VERBOSE_ASSERTS`):
     Passed asserts aren't outputted by default if any of the other asserts in the testcase fail, this is to reduce the chanced of a cluttered output. Enable this to show passed asserts.
 
-### More Examples (todo)
-
 ### Dev Goals
 - [x] More informative outputs
 - [x] Object truthiness (struct, array, etc.)
 - [x] Epsilon-based floating-point comparison
 - [x] String comparing
 - [x] Custom fail messages
-- [x] Collections / Sequences (partially completed)
+- [x] Collections / Sequences
 - [ ] Parameterized testing
 - [ ] Assertion Introspection
 - [ ] Timeout Handling / Infinite-Loop Detection
 - [ ] Rich Reporting Formats
-- [ ] Randomised (Fuzz-Style) Testing
 - [ ] Snapshot / Golden File Testing
-- [ ] Memory-Leak Detection Integration
+- [ ] Same / Not Same Object possible?
