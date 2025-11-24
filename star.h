@@ -1,5 +1,5 @@
 /* star.h - v0.3.2
-   A single-header testing suite.
+   A single-header testing suite for C/C++.
 
    USAGE:
         Define `STAR_NO_ENTRY` in *one* source file before including this header to disable `main()` hijacking:
@@ -13,7 +13,6 @@
 
    LICENSE:
        See end of file for license information.
-       
 */
 
 #ifndef STAR_TEST_H
@@ -155,6 +154,12 @@ static inline bool __assert_kindaeq(double a, double b, double n, bool negate) {
     return ok;
 }
 
+static inline double __star_kinda_degree(const void *dptr) { 
+    double n = 6.9; 
+    if (dptr) n = *(const double*)dptr; 
+    return n; 
+}
+
 /* MACROS */
 // Equality & Inequality
 #define ASS_EQ(a, b)                                                      \
@@ -231,11 +236,11 @@ static inline bool __assert_kindaeq(double a, double b, double n, bool negate) {
 #define ASS_STRNEQ(a, b)                                                  \
     do {                                                                  \
         if (!__assert_streq(a, b, true)) {                                \
-            _STAR_FAIL("ASS_STREQ(%s, %s) failed: %s = %s",               \
+            _STAR_FAIL("ASS_STRNEQ(%s, %s) failed: %s = %s",              \
                        #a, #b, (a), (b));                                 \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_STREQ(%s, %s) passed: %s != %s",              \
+            _STAR_PASS("ASS_STRNEQ(%s, %s) passed: %s != %s",             \
                        #a, #b, (a), (b));                                 \
         }                                                                 \
     } while (0)
@@ -243,11 +248,11 @@ static inline bool __assert_kindaeq(double a, double b, double n, bool negate) {
 #define ASS_STRNEQM(a, b, m)                                              \
     do {                                                                  \
         if (!__assert_streq(a, b, true)) {                                \
-            _STAR_FAIL("ASS_STNREQM(%s, %s) %s",                          \
+            _STAR_FAIL("ASS_STNRNEQM(%s, %s) %s",                         \
                 #a, #b, _STAR_CUSTOM(m));                                 \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_STNREQM(%s, %s) passed: %s != %s",            \
+            _STAR_PASS("ASS_STNRNEQM(%s, %s) passed: %s != %s",           \
                        #a, #b, (a), (b));                                 \
         }                                                                 \
     } while (0)
@@ -256,11 +261,7 @@ static inline bool __assert_kindaeq(double a, double b, double n, bool negate) {
 #define ASS_KINDAEQ(a, b, dptr)                                           \
     do {                                                                  \
         _star_asserts_total++;                                            \
-        double n = 6.9;                                                   \
-        if ((dptr) != NULL) {                                             \
-            const double *tmp__ = (const double *)(dptr);                 \
-            n = *tmp__;                                                   \
-        }                                                                 \
+        double n = __star_kinda_degree(dptr);                             \
         if (!__assert_kindaeq((a), (b), n, false)) {                      \
             _STAR_FAIL("ASS_KINDAEQ(%s, %s) failed: %lf !≈ %lf (degree %lf)", \
                        #a, #b, (double)(a), (double)(b), n);              \
@@ -274,11 +275,7 @@ static inline bool __assert_kindaeq(double a, double b, double n, bool negate) {
 #define ASS_KINDAEQM(a, b, dptr, m)                                       \
     do {                                                                  \
         _star_asserts_total++;                                            \
-        double n = 6.9;                                                   \
-        if ((dptr) != NULL) {                                             \
-            const double *tmp__ = (const double *)(dptr);                 \
-            n = *tmp__;                                                   \
-        }                                                                 \
+        double n = __star_kinda_degree(dptr);                             \
         if (!__assert_kindaeq((a), (b), n, false)) {                      \
             _STAR_FAIL("ASS_KINDAEQM(%s, %s) %s",                         \
                 #a, #b, _STAR_CUSTOM(m));                                 \
@@ -585,105 +582,216 @@ static inline bool __assert_kindaeq(double a, double b, double n, bool negate) {
     } while (0)
 
 // Collections / Sequences
-#define __STAR_VALUE_EQUALS(a, b) _Generic((a),                           \
-    const char*: strcmp,                                                  \
-    char*: strcmp,                                                        \
-    default: __star_value_equals_default                                  \
+#define __STAR_VALUE_EQUALS(a, b) _Generic((a),                                  \
+    const char*: strcmp,                                                         \
+    char*: strcmp,                                                               \
+    default: __star_nearly_equal                                                 \
 )(a, b)
 
-static inline int __star_value_equals_default(double a, double b) {
-    return __star_nearly_equal(a, b);
-}
-
-#define ASS_IN(item, container)                                               \
-    do {                                                                      \
-        _star_asserts_total++;                                                \
-        int _star_found = 0;                                                  \
-        for (int i = 0;                                                       \
-             i < (int)(sizeof(container) / sizeof((container)[0]));           \
-             i++) {                                                           \
-            if (__STAR_VALUE_EQUALS((container)[i], (item))) {                \
-                _star_found = 1;                                              \
-                if (_star_verbose)                                            \
-                    _STAR_PASS("ASS_IN(%s, %s) passed: %s found at index %d", \
-                              #item, #container, #item, i);                   \
-                break;                                                        \
-            }                                                                 \
-        }                                                                     \
-        if (!_star_found) {                                                   \
-            _STAR_FAIL("ASS_IN(%s, %s) failed: %s not found",                 \
-                      #item, #container, #item);                              \
-            __star_increment_failed();                                        \
-            if (_star_fatal) return;                                          \
-        }                                                                     \
+#define ASS_IN(item, container)                                                  \
+    do {                                                                         \
+        _star_asserts_total++;                                                   \
+        int _star_found = 0;                                                     \
+        for (int i = 0;                                                          \
+             i < (int)(sizeof(container) / sizeof((container)[0]));              \
+             i++) {                                                              \
+            if (__STAR_VALUE_EQUALS((container)[i], (item))) {                   \
+                _star_found = 1;                                                 \
+                if (_star_verbose)                                               \
+                    _STAR_PASS("ASS_IN(%s, %s) passed: %s found at index %d",    \
+                              #item, #container, #item, i);                      \
+                break;                                                           \
+            }                                                                    \
+        }                                                                        \
+        if (!_star_found) {                                                      \
+            _STAR_FAIL("ASS_IN(%s, %s) failed: %s not found",                    \
+                      #item, #container, #item);                                 \
+            __star_increment_failed();                                           \
+            if (_star_fatal) return;                                             \
+        }                                                                        \
     } while (0)
 
 
-#define ASS_INM(item, container, m)                                           \
-    do {                                                                      \
-        _star_asserts_total++;                                                \
-        int _star_found = 0;                                                  \
-        for (int i = 0;                                                       \
-             i < (int)(sizeof(container) / sizeof((container)[0]));           \
-             i++) {                                                           \
-            if (__STAR_VALUE_EQUALS((container)[i], (item))) {                \
-                _star_found = 1;                                              \
-                if (_star_verbose)                                            \
-                    _STAR_PASS("ASS_IN(%s, %s) passed: %s found at index %d", \
-                              #item, #container, #item, i);                   \
-                break;                                                        \
-            }                                                                 \
-        }                                                                     \
-        if (!_star_found) {                                                   \
-            _STAR_FAIL("ASS_IN(%s, %s) %s",                                   \
-                      #item, #container, _STAR_CUSTOM(m));                    \
-            __star_increment_failed();                                        \
-            if (_star_fatal) return;                                          \
-        }                                                                     \
+#define ASS_INM(item, container, m)                                              \
+    do {                                                                         \
+        _star_asserts_total++;                                                   \
+        int _star_found = 0;                                                     \
+        for (int i = 0;                                                          \
+             i < (int)(sizeof(container) / sizeof((container)[0]));              \
+             i++) {                                                              \
+            if (__STAR_VALUE_EQUALS((container)[i], (item))) {                   \
+                _star_found = 1;                                                 \
+                if (_star_verbose)                                               \
+                    _STAR_PASS("ASS_IN(%s, %s) passed: %s found at index %d",    \
+                              #item, #container, #item, i);                      \
+                break;                                                           \
+            }                                                                    \
+        }                                                                        \
+        if (!_star_found) {                                                      \
+            _STAR_FAIL("ASS_IN(%s, %s) %s",                                      \
+                      #item, #container, _STAR_CUSTOM(m));                       \
+            __star_increment_failed();                                           \
+            if (_star_fatal) return;                                             \
+        }                                                                        \
     } while (0)
 
-#define ASS_NOTIN(item, container)                                            \
-    do {                                                                      \
-        _star_asserts_total++;                                                \
-        int _star_found = 0;                                                  \
-        for (int i = 0;                                                       \
-             i < (int)(sizeof(container) / sizeof((container)[0]));           \
-             i++) {                                                           \
-            if (__STAR_VALUE_EQUALS((container)[i], (item))) {                \
-                _star_found = 1;                                              \
-                _STAR_FAIL("ASS_NOTIN(%s, %s) failed: %s found at index %d",  \
-                          #item, #container, #item, i);                       \
-                __star_increment_failed();                                    \
-                if (_star_fatal) return;                                      \
-                break;                                                        \
-            }                                                                 \
-        }                                                                     \
-        if (!_star_found && _star_verbose) {                                  \
-            _STAR_PASS("ASS_NOTIN(%s, %s) passed: %s not found",              \
-                      #item, #container, #item);                              \
-        }                                                                     \
+#define ASS_NOTIN(item, container)                                               \
+    do {                                                                         \
+        _star_asserts_total++;                                                   \
+        int _star_found = 0;                                                     \
+        for (int i = 0;                                                          \
+             i < (int)(sizeof(container) / sizeof((container)[0]));              \
+             i++) {                                                              \
+            if (__STAR_VALUE_EQUALS((container)[i], (item))) {                   \
+                _star_found = 1;                                                 \
+                _STAR_FAIL("ASS_NOTIN(%s, %s) failed: %s found at index %d",     \
+                          #item, #container, #item, i);                          \
+                __star_increment_failed();                                       \
+                if (_star_fatal) return;                                         \
+                break;                                                           \
+            }                                                                    \
+        }                                                                        \
+        if (!_star_found && _star_verbose) {                                     \
+            _STAR_PASS("ASS_NOTIN(%s, %s) passed: %s not found",                 \
+                      #item, #container, #item);                                 \
+        }                                                                        \
+    } while (0)   
+
+#define ASS_NOTINM(item, container, m)                                           \
+    do {                                                                         \
+        _star_asserts_total++;                                                   \
+        int _star_found = 0;                                                     \
+        for (int i = 0;                                                          \
+             i < (int)(sizeof(container) / sizeof((container)[0]));              \
+             i++) {                                                              \
+            if (__STAR_VALUE_EQUALS((container)[i], (item))) {                   \
+                _star_found = 1;                                                 \
+                _STAR_FAIL("ASS_NOTIN(%s, %s) %s",                               \
+                          #item, #container, _STAR_CUSTOM(m));                   \
+                __star_increment_failed();                                       \
+                if (_star_fatal) return;                                         \
+                break;                                                           \
+            }                                                                    \
+        }                                                                        \
+        if (!_star_found && _star_verbose) {                                     \
+            _STAR_PASS("ASS_NOTIN(%s, %s) passed: %s not found",                 \
+                      #item, #container, #item);                                 \
+        }                                                                        \
     } while (0)
 
-#define ASS_NOTINM(item, container, m)                                        \
-    do {                                                                      \
-        _star_asserts_total++;                                                \
-        int _star_found = 0;                                                  \
-        for (int i = 0;                                                       \
-             i < (int)(sizeof(container) / sizeof((container)[0]));           \
-             i++) {                                                           \
-            if (__STAR_VALUE_EQUALS((container)[i], (item))) {                \
-                _star_found = 1;                                              \
-                _STAR_FAIL("ASS_NOTIN(%s, %s) %s",                            \
-                          #item, #container, _STAR_CUSTOM(m));                \
-                __star_increment_failed();                                    \
-                if (_star_fatal) return;                                      \
-                break;                                                        \
-            }                                                                 \
-        }                                                                     \
-        if (!_star_found && _star_verbose) {                                  \
-            _STAR_PASS("ASS_NOTIN(%s, %s) passed: %s not found",              \
-                      #item, #container, #item);                              \
-        }                                                                     \
+#define ASS_INBIN(item, container)                                               \
+    do {                                                                         \
+        _star_asserts_total++;                                                   \
+        int n = (int)sizeof(container) / sizeof((container)[0]);                 \
+        int low = 0;                                                             \
+        int high = n - 1;                                                        \
+        int _star_found = 0;                                                     \
+        while (low <= high) {                                                    \
+            int mid = low + (high - low) / 2;                                    \
+            if (__STAR_VALUE_EQUALS((container)[mid], (item))) {                 \
+                _star_found = 1;                                                 \
+                if (_star_verbose)                                               \
+                    _STAR_PASS("ASS_INBIN(%s, %s) passed, %s found at index %d", \
+                        #item, #container, #item, mid);                          \
+                break;                                                           \
+            } else if ((container)[mid] < (item)) {                              \
+                low = mid + 1;                                                   \
+            } else {                                                             \
+                high = mid - 1;                                                  \
+            }                                                                    \
+        }                                                                        \
+        if (!_star_found) {                                                      \
+            _STAR_FAIL("ASS_INBIN(%s, %s) failed: %s not found",                 \
+                #item, #container, #item);                                       \
+                __star_increment_failed();                                       \
+            if (_star_fatal) return;                                             \
+        }                                                                        \
+    } while (0)
+
+#define ASS_INBINM(item, container, m)                                           \
+    do {                                                                         \
+        _star_asserts_total++;                                                   \
+        int n = (int)sizeof(container) / sizeof((container)[0]);                 \
+        int low = 0;                                                             \
+        int high = n - 1;                                                        \
+        int _star_found = 0;                                                     \
+        while (low <= high) {                                                    \
+            int mid = low + (high - low) / 2;                                    \
+            if (__STAR_VALUE_EQUALS((container)[mid], (item))) {                 \
+                _star_found = 1;                                                 \
+                if (_star_verbose)                                               \
+                    _STAR_PASS("ASS_INBINM(%s, %s) passed, %s found at index %d", \
+                        #item, #container, #item, mid);                          \
+                break;                                                           \
+            } else if ((container)[mid] < (item)) {                              \
+                low = mid + 1;                                                   \
+            } else {                                                             \
+                high = mid - 1;                                                  \
+            }                                                                    \
+        }                                                                        \
+        if (!_star_found) {                                                      \
+            _STAR_FAIL("ASS_INBINM(%s, %s) %s",                                  \
+                #item, #container, _STAR_CUSTOM(m));                             \
+            __star_increment_failed();                                           \
+            if (_star_fatal) return;                                             \
+        }                                                                        \
+    } while (0)
+
+#define ASS_NOTINBIN(item, container)                                            \
+    do {                                                                         \
+        _star_asserts_total++;                                                   \
+        int n = (int)sizeof(container) / sizeof((container)[0]);                 \
+        int low = 0;                                                             \
+        int high = n - 1;                                                        \
+        int _star_found = 0;                                                     \
+        while (low <= high) {                                                    \
+            int mid = low + (high - low) / 2;                                    \
+            if (__STAR_VALUE_EQUALS((container)[mid], (item))) {                 \
+                _star_found = 1;                                                 \
+                _STAR_FAIL("ASS_INBIN(%s, %s) passed: %s found",                 \
+                    #item, #container, #item);                                   \
+                __star_increment_failed();                                       \
+                if (_star_fatal) return;                                         \
+                break;                                                           \
+            } else if ((container)[mid] < (item)) {                              \
+                low = mid + 1;                                                   \
+            } else {                                                             \
+                high = mid - 1;                                                  \
+            }                                                                    \
+        }                                                                        \
+        if (!_star_found && _star_verbose) {                                     \
+            _STAR_PASS("ASS_NOTINBINM(%s, %s) passed: %s not found",             \
+                      #item, #container, #item);                                 \
+        }                                                                        \
+    } while (0)
+
+
+#define ASS_NOTINBINM(item, container, m)                                        \
+    do {                                                                         \
+        _star_asserts_total++;                                                   \
+        int n = (int)sizeof(container) / sizeof((container)[0])                  \
+        int low = 0;                                                             \
+        int high = n - 1;                                                        \
+        int _star_found = 0;                                                     \
+        while (low <= high) {                                                    \
+            int mid = low + (high - low) / 2;                                    \
+            if (__STAR_VALUE_EQUALS((container[mid], (item)))) {                 \
+                _star_found = 1;                                                 \
+                _STAR_FAIL("ASS_NOTINBINM(%s, %s) %s",                           \
+                          #item, #container, _STAR_CUSTOM(m));                   \
+                __star_increment_failed();                                       \
+                if (_star_fatal) return;                                         \
+                break;                                                           \
+            } else if ((container)[mid] < (item)) {                              \
+                low = mid + 1;                                                   \
+            } else {                                                             \
+                high = mid - 1;                                                  \
+            }                                                                    \
+        }                                                                        \
+        if (!_star_found && _star_verbose) {                                     \
+            _STAR_PASS("ASS_NOTINBINM(%s, %s) passed: %s not found",             \
+                      #item, #container, #item);                                 \
+        }                                                                        \
     } while (0)
 
 // Forced fail
@@ -692,10 +800,9 @@ static inline int __star_value_equals_default(double a, double b) {
         _STAR_FAIL("DIE()"); \
     } while (0)
 
-/* Run Functionality */
-#if defined(STAR_NO_ENTRY)
-static inline int star_run(int o) {
-    if (o) printf("\033[1mRunning %zu tests...\033[0m\n", _star_test_count);
+
+static int __star_run_internal(bool verbose_start) {
+    if (verbose_start) printf("\033[1mRunning %zu tests...\033[0m\n", _star_test_count);
 
     int passed_tests = 0;
     int failed_tests = 0;
@@ -723,45 +830,20 @@ static inline int star_run(int o) {
 
     size_t total_passed_asserts = _star_asserts_total - _star_asserts_failed;
 
-    if (o) _STAR_SUMMARY("%d/%zu tests passed, %d failed " "(%zu/%zu assertions passed)", 
+    if (verbose_start) _STAR_SUMMARY("%d/%zu tests passed, %d failed " "(%zu/%zu assertions passed)", 
         passed_tests, _star_test_count, failed_tests, total_passed_asserts, _star_asserts_total);
 
     return failed_tests ? 1 : 0;
 }
+
+/* Run Functionality */
+#if defined(STAR_NO_ENTRY)
+static inline int star_run(int verbose_start) {
+    return __star_run_internal(verbose_start);
+}
 #else
 int main(int argc, char** argv) {
-    printf("\033[1mRunning %zu tests...\033[0m\n", _star_test_count);
-
-    int passed_tests = 0;
-    int failed_tests = 0;
-
-    for (int i = 0; i < (int)_star_test_count; i++) {
-        _star_current_failed = 0;
-
-        size_t before_total  = _star_asserts_total;
-        size_t before_failed = _star_asserts_failed;
-
-        _star_tests[i].func();
-
-        size_t test_total  = _star_asserts_total  - before_total;
-        size_t test_failed = _star_asserts_failed - before_failed;
-        size_t test_passed = test_total - test_failed;
-
-        if (_star_current_failed) {
-            _STAR_TEST_FAIL("%s: %zu/%zu assertions passed (%zu failed)", _star_tests[i].name, test_passed, test_total, test_failed);
-            failed_tests++;
-        } else {
-            _STAR_TEST_PASS("%s: %zu/%zu assertions passed", _star_tests[i].name, test_passed, test_total);
-            passed_tests++;
-        }
-    }
-
-    size_t total_passed_asserts = _star_asserts_total - _star_asserts_failed;
-
-    _STAR_SUMMARY("%d/%zu tests passed, %d failed " "(%zu/%zu assertions passed)", 
-        passed_tests, _star_test_count, failed_tests, total_passed_asserts, _star_asserts_total);
-
-    return failed_tests ? 1 : 0;
+    return __star_run_internal(true);
 }
 #endif /* STAR_NO_ENTRY */
 
@@ -773,10 +855,11 @@ int main(int argc, char** argv) {
 
 /*
     Revision history:
+        0.6.1  (2025-11-25)  Added binary search collection asserts and custom messages.
         0.6.0  (2025-11-24)  Changes:
                                 - 0.5.1: Custom message color is now normal intensity cyan. 
                                 - 0.5.2: Consistent `bool` instead of `int` for boolean return values.
-                                - 0.6.0: Added some basic collection assertions (more to come)  
+                                - 0.6.0: Added some basic collection assertions
         0.5.0  (2025-11-24)  Changes:
                                 - 0.4.1: `STAR_VERBOSE` also works in addition to `STAR_VERBOSE_ASSERTS`.
                                 - 0.4.2: Now using epsilon-based floating point comparison.
