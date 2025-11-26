@@ -57,41 +57,40 @@ static const int _star_verbose = 0;
 
 
 #if !defined(STAR_NO_COLOR)
-#define _STAR_FAIL(format, ...)                             \
-    do {                                                    \
-        fprintf(stderr, "\033[1;31m[FAIL]\033[0m \033[2m%s:%d\033[0m: ",  \
-                __FILE__, __LINE__);                        \
-        fprintf(stderr, format "\n", ##__VA_ARGS__);        \
-    } while (0)
-
-#define _STAR_TEST_FAIL(format, ...)                        \
-    do {                                                    \
-        fprintf(stderr, "\033[1;31m[TEST FAILED]\033[0m "); \
-        fprintf(stderr, format "\n", ##__VA_ARGS__);        \
-    } while (0)
-
-#define _STAR_PASS(format, ...)         printf("\033[1;32m[PASS]\033[0m " format "\n", ##__VA_ARGS__)
-#define _STAR_TEST_PASS(format, ...)    printf("\033[1;32m[TEST PASSED]\033[0m " format "\n", ##__VA_ARGS__)
-#define _STAR_SUMMARY(format, ...)      printf("\n\033[1mTechnical and Reliable Summary:\033[0m " format "\n", ##__VA_ARGS__)
-#define _STAR_CUSTOM(msg) "\033[36m" msg "\033[0m"
+    #define STAR_FMT_FAIL_PREFIX   "\033[1;31m[FAIL]\033[0m "
+    #define STAR_FMT_TEST_FAIL     "\033[1;31m[TEST FAILED]\033[0m "
+    #define STAR_FMT_PASS_PREFIX   "\033[1;32m[PASS]\033[0m "
+    #define STAR_FMT_TEST_PASS     "\033[1;32m[TEST PASSED]\033[0m "
+    #define STAR_FMT_SUMMARY       "\n\033[1mTechnical and Reliable Summary:\033[0m "
+    #define STAR_FMT_FILELINE      "\033[2m%s:%d\033[0m: "
+    #define _STAR_CUSTOM(msg)      "\033[36m" msg "\033[0m"
 #else
-#define _STAR_FAIL(format, ...)                      \
-    do {                                             \
-        fprintf(stderr, "[FAIL] %s:%d: ",            \
-                __FILE__, __LINE__);                 \
-        fprintf(stderr, format "\n", ##__VA_ARGS__); \
-    } while (0)
-
-#define _STAR_TEST_FAIL(format, ...)                 \
-    do {                                             \
-        fprintf(stderr, "[TEST FAILed] ");           \
-        fprintf(stderr, format "\n", ##__VA_ARGS__); \
-    } while (0)
-
-#define _STAR_PASS(format, ...)         printf("[PASS] " format "\n", ##__VA_ARGS__)
-#define _STAR_TEST_PASS(format, ...)    printf("[TEST PASSED] " format "\n", ##__VA_ARGS__)
-#define _STAR_SUMMARY(format, ...)      printf("\nTechnical and Reliable Summary: " format "\n", ##__VA_ARGS__)
+    #define STAR_FMT_FAIL_PREFIX   "[FAIL] "
+    #define STAR_FMT_TEST_FAIL     "[TEST FAILED] "
+    #define STAR_FMT_PASS_PREFIX   "[PASS] "
+    #define STAR_FMT_TEST_PASS     "[TEST PASSED] "
+    #define STAR_FMT_SUMMARY       "\nTechnical and Reliable Summary: "
+    #define STAR_FMT_FILELINE      "%s:%d: "
+    #define _STAR_CUSTOM(msg)      msg
 #endif /* STAR_NO_COLOR */
+
+
+#define _STAR_FAIL(format, ...)                                      \
+    do {                                                             \
+        fprintf(stderr, STAR_FMT_FAIL_PREFIX STAR_FMT_FILELINE,      \
+                __FILE__, __LINE__);                                 \
+        fprintf(stderr, format "\n", ##__VA_ARGS__);                 \
+    } while (0)
+
+#define _STAR_TEST_FAIL(format, ...)                                 \
+    do {                                                             \
+        fprintf(stderr, STAR_FMT_TEST_FAIL);                         \
+        fprintf(stderr, format "\n", ##__VA_ARGS__);                 \
+    } while (0)
+
+#define _STAR_PASS(format, ...)      printf(STAR_FMT_PASS_PREFIX format "\n", ##__VA_ARGS__)
+#define _STAR_TEST_PASS(format, ...) printf(STAR_FMT_TEST_PASS format "\n", ##__VA_ARGS__)
+#define _STAR_SUMMARY(format, ...)   printf(STAR_FMT_SUMMARY format "\n", ##__VA_ARGS__)
 
 // Test "Constructor"
 #define TEST(name)                                                        \
@@ -133,7 +132,7 @@ static inline bool __assert_eq(double a, double b, bool negate) {
 static inline bool __assert_streq(char* a, char* b, bool negate) {
     _star_asserts_total++;
 
-    bool equal = strcmp((a), (b)) == 0 ? true : false;
+    bool equal = (strcmp(a, b) == 0);
     bool ok = negate ? !equal : equal;
 
     if (!ok) {
@@ -159,6 +158,22 @@ static inline double __star_kinda_degree(const void *dptr) {
     if (dptr) n = *(const double*)dptr; 
     return n; 
 }
+
+static inline int __star_find_linear(
+    const void *item,
+    const void *container,
+    size_t count,
+    size_t elem_size,
+    int (*equals)(const void*, const void*)
+) {
+    const char *base = (const char *)container;
+    for (size_t i = 0; i < count; ++i) {
+        const void *elem = base + i * elem_size;
+        if (equals(item, elem)) return (int)i;
+    }
+    return -1;
+}
+
 
 /* MACROS */
 // Equality & Inequality
@@ -257,7 +272,6 @@ static inline double __star_kinda_degree(const void *dptr) {
         }                                                                 \
     } while (0)
 
-// Look at this song and dance I have to do... (easily preventable if I wasn't stubborn)
 #define ASS_KINDAEQ(a, b, dptr)                                           \
     do {                                                                  \
         _star_asserts_total++;                                            \
@@ -290,36 +304,29 @@ static inline double __star_kinda_degree(const void *dptr) {
 #define ASS_KINDANEQ(a, b, dptr)                                          \
     do {                                                                  \
         _star_asserts_total++;                                            \
-        double n = 6.9;                                                   \
-        if ((dptr) != NULL) {                                             \
-            const double *tmp__ = (const double *)(dptr);                 \
-            n = *tmp__;                                                   \
-        }                                                                 \
-        if (__assert_kindaeq((a), (b), n, true)) {                        \
-            _STAR_FAIL("ASS_KINDAEQ(%s, %s) failed: %lf ≈ %lf (degree %lf)", \
+        double n = __star_kinda_degree(dptr);                             \
+        if (!__assert_kindaeq((a), (b), n, true)) {                       \
+            _STAR_FAIL("ASS_KINDANEQ(%s, %s) failed: %lf ≈ %lf (degree %lf)", \
                        #a, #b, (double)(a), (double)(b), n);              \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
-            _STAR_PASS("ASS_KINDAEQ(%s, %s) passed: %lf !≈ %lf (degree %lf)", \
+            _STAR_PASS("ASS_KINDANEQ(%s, %s) passed: %lf !≈ %lf (degree %lf)", \
                        #a, #b, (double)(a), (double)(b), n);              \
         }                                                                 \
     } while (0)
 
+
 #define ASS_KINDANEQM(a, b, dptr, m)                                      \
     do {                                                                  \
         _star_asserts_total++;                                            \
-        double n = 6.9;                                                   \
-        if ((dptr) != NULL) {                                             \
-            const double *tmp__ = (const double *)(dptr);                 \
-            n = *tmp__;                                                   \
-        }                                                                 \
+        double n = __star_kinda_degree(dptr);                             \
         if (!__assert_kindaeq((a), (b), n, true)) {                       \
-            _STAR_FAIL("ASS_KINDANEQM(%s, %s) %s",                        \
-                #a, #b, _STAR_CUSTOM(m));                                 \
+        _STAR_FAIL("ASS_KINDANEQM(%s, %s) %s",                            \
+                        #a, #b, _STAR_CUSTOM(m));                         \
             if (_star_fatal) return;                                      \
         } else if (_star_verbose) {                                       \
             _STAR_PASS("ASS_KINDANEQM(%s, %s) passed: %lf ≈ %lf (degree %lf)", \
-                       #a, #b, (double)(a), (double)(b), n);              \
+                        #a, #b, (double)(a), (double)(b), n);             \
         }                                                                 \
     } while (0)
 
@@ -855,6 +862,8 @@ int main(int argc, char** argv) {
 
 /*
     Revision history:
+        0.6.2  (2025-11-27)  Fixed KINDANEQ/M logic to properly fail and append to global asserts + refactored
+                             error message macros improved readability and consistency.
         0.6.1  (2025-11-25)  Added binary search collection asserts and custom messages.
         0.6.0  (2025-11-24)  Changes:
                                 - 0.5.1: Custom message color is now normal intensity cyan. 
