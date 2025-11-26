@@ -76,6 +76,9 @@ TEST(test_strings) {
     <img src="scs/example2.png" width="600">
 </p>
 
+> [!WARNING]
+> STAR only works with GCC/Clang because it uses non-standard attributes. It will likely not work with MSVC. This may change in the future.
+
 Only 8 asserts are recognised because of fatal assertions that abort the rest of the function and subsequently don't reach the next assert (in `test_strings` and `test_addition`). There are more functions, but those are shown seperately below (todo).
 
 ### Macros
