@@ -1,8 +1,8 @@
 # star
-STAR (Super Technical And Reliable) testing suite written in C.
+STAR (Super Technical And Reliable) testing framework written in C.
 
 > [!NOTE]
-> I made this to be used in my personal C/C++ projects, it is very likely not as performant as many other testing suites out there, but I am ensuring in my development that it's easy to use.
+> I made this to be used in my personal C/C++ projects, it is very likely not as performant as many other libraries out there, but I am ensuring in my development that it's easy to use.
 
 ## Current Functionality
 ### Tests and Asserts (developing more)
